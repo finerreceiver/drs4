@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "drs4"
+version = "0.1.0"
+description = "Control and data acquisition for DRS4"
+authors = ["Akio Taniguchi <taniguchi@a.phys.nagoya-u.ac.jp>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9, <3.13"
+fire = "^0.7"
+xarray = "^2024.0"
+xarray-dataclasses = "^1.8"
+zarr = "^2.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.0"
+ipython = "^8.0"
+pytest = "^8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
