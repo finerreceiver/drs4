@@ -91,10 +91,10 @@ class DRS4(AsDataset):
 
     # coords
     chan: Coordof[Chan]
-    """Channel number (0-1023)."""
+    """Channel number (0-511)."""
 
     signal_chan: Coordof[SignalChan]
-    """Signal channel number (0-1023)."""
+    """Signal channel number (0-511)."""
 
     signal_SB: Coordof[SignalSB]
     """Signal sideband (USB|LSB)."""
