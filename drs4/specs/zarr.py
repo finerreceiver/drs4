@@ -9,6 +9,7 @@ from typing import Literal as L
 # dependencies
 import numpy as np
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
+from .vdif import IntegTime
 
 
 # data classes
@@ -102,5 +103,5 @@ class Zarr(AsDataset):
     interface: Attr[L[1, 2]]
     """Interface (IF) number of DRS4 (1|2)."""
 
-    integ_time: Attr[L[100, 200, 500, 1000]]
+    integ_time: Attr[IntegTime]
     """Spectral integration time in ms (100|200|500|1000)."""
