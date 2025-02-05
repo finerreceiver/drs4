@@ -64,11 +64,11 @@ class VDIF(AsDataArray):
     """Measured time in UTC."""
 
     freq: Coordof[Freq]
-    """Measured frequency in GHz."""
+    """Measured frequency (0-10.22 GHz)."""
 
     # coords
     chan: Coordof[Chan]
-    """Channel number (0-511)."""
+    """Channel number (0-511 ch)."""
 
     # vars
     auto: Dataof[Auto]
