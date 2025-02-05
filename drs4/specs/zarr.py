@@ -11,12 +11,6 @@ import numpy as np
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
 
 
-# constants
-VDIF_HEADER_BYTES = 32
-VDIF_DATA_BYTES = 1024
-VDIF_FRAME_BYTES = VDIF_HEADER_BYTES + VDIF_DATA_BYTES
-
-
 # data classes
 @dataclass
 class Time:

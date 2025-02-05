@@ -14,12 +14,12 @@ from socket import (
     inet_aton,
     socket,
 )
-from tqdm import tqdm
 from typing import Optional, Union
 
 
 # dependencies
-from .specs.drs4 import VDIF_FRAME_BYTES
+from tqdm import tqdm
+from .specs.vdif import VDIF_FRAME_BYTES
 
 
 # constants
