@@ -36,39 +36,28 @@ class Time:
 
 
 @dataclass
-class Freq:
-    data: Data[L["freq"], np.float64]
-    long_name: Attr[str] = "Measured frequency"
-    units: Attr[str] = "GHz"
-
-
-@dataclass
 class Chan:
-    data: Data[L["freq"], np.int64]
+    data: Data[L["chan"], np.int64]
     long_name: Attr[str] = "Channel number"
 
 
 @dataclass
 class Auto:
-    data: Data[tuple[L["time"], L["freq"]], np.float64]
+    data: Data[tuple[L["time"], L["chan"]], np.float64]
     long_name: Attr[str] = "Auto-correlation spectra"
     units: Attr[str] = "Arbitrary unit"
 
 
 @dataclass
 class VDIF(AsDataArray):
-    """Data specifications of VDIF."""
+    """Data specifications of DRS4 VDIF."""
 
     # dims
     time: Coordof[Time]
     """Measured time in UTC."""
 
-    freq: Coordof[Freq]
-    """Measured frequency (0-10.22 GHz)."""
-
-    # coords
     chan: Coordof[Chan]
-    """Channel number (0-511 ch)."""
+    """Channel number (0-511)."""
 
     # vars
     auto: Dataof[Auto]
@@ -123,8 +112,11 @@ def open_vdif(
                 ("data", ("f4", 256)),
             ],
         )
-        word_0 = Word(data["word_0"])
-        word_1 = Word(data["word_1"])
+
+    word_0 = Word(data["word_0"])
+    word_1 = Word(data["word_1"])
+    is_first_half = word_1[0:24] % 2 == 0
+    is_second_half = word_1[0:24] % 2 == 1
 
     time = (
         REF_EPOCH_ORIGIN
@@ -132,26 +124,22 @@ def open_vdif(
         + np.timedelta64(1, "s") * word_0[0:30]
         + np.timedelta64(integ_time, "ms") * (word_1[0:24] // 2)
     )
-    is_first_half = word_1[0:24] % 2 == 0
-    is_second_half = word_1[0:24] % 2 == 1
 
     return xr.concat(
         (
             VDIF.new(
                 time=time[is_first_half],
-                freq=FREQ_FIRST_HALF,
                 chan=CHAN_FIRST_HALF,
                 auto=data["data"][is_first_half],
                 integ_time=integ_time,
             ),
             VDIF.new(
                 time=time[is_second_half],
-                freq=FREQ_SECOND_HALF,
                 chan=CHAN_SECOND_HALF,
                 auto=data["data"][is_second_half],
                 integ_time=integ_time,
             ),
         ),
-        dim="freq",
+        dim="chan",
         join="inner",
     )
