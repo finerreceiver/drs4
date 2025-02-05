@@ -19,7 +19,7 @@ from typing import Optional, Union
 
 
 # dependencies
-from .specs import VDIF_FRAME_BYTES
+from .specs.drs4 import VDIF_FRAME_BYTES
 
 
 # constants

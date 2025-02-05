@@ -1,9 +1,4 @@
-__all__ = [
-    "DRS4",
-    "VDIF_HEADER_BYTES",
-    "VDIF_DATA_BYTES",
-    "VDIF_FRAME_BYTES",
-]
+__all__ = ["DRS4"]
 
 
 # standard library

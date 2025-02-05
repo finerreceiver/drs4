@@ -1,4 +1,4 @@
-__all__ = ["open_vdif"]
+__all__ = ["VDIF", "open_vdif"]
 
 
 # standard library
