@@ -93,22 +93,20 @@ def open_vdif(
         DataArray of the input VDIF file.
 
     """
-    with open(vdif, "rb") as f:
-        data = np.frombuffer(
-            f.read(),
-            dtype=[
-                ("word_0", "u4"),
-                ("word_1", "u4"),
-                ("word_2", "u4"),
-                ("word_3", "u4"),
-                ("word_4", "u4"),
-                ("word_5", "u4"),
-                ("word_6", "u4"),
-                ("word_7", "u4"),
-                ("data", ("f4", 256)),
-            ],
-        )
-
+    data = np.fromfile(
+        vdif,
+        dtype=[
+            ("word_0", "u4"),
+            ("word_1", "u4"),
+            ("word_2", "u4"),
+            ("word_3", "u4"),
+            ("word_4", "u4"),
+            ("word_5", "u4"),
+            ("word_6", "u4"),
+            ("word_7", "u4"),
+            ("data", ("f4", 256)),
+        ],
+    )
     word_0 = Word(data["word_0"])
     word_1 = Word(data["word_1"])
     is_first_half = word_1[0:24] % 2 == 0
