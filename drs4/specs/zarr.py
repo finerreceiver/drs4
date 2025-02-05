@@ -3,13 +3,20 @@ __all__ = ["Zarr"]
 
 # standard library
 from dataclasses import dataclass
-from typing import Literal as L
+from os import PathLike
+from typing import Literal as L, Union
 
 
 # dependencies
 import numpy as np
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
-from .vdif import IntegTime
+
+
+# type hints
+Chassis = L[1, 2]
+IntegTime = L[100, 200, 500, 1000]
+Interface = L[1, 2]
+StrPath = Union[PathLike[str], str]
 
 
 # data classes
@@ -84,7 +91,7 @@ class Zarr(AsDataset):
     """Signal channel number (0-511)."""
 
     signal_SB: Coordof[SignalSB]
-    """Signal sideband (USB|LSB)."""
+    """Signal sideband (USB|LSB|N/A)."""
 
     # vars
     auto_USB: Dataof[AutoUSB]
@@ -97,10 +104,10 @@ class Zarr(AsDataset):
     """Cross-correlation spectra of 2SB (USB x LSB*)."""
 
     # attrs
-    chassis: Attr[L[1, 2]]
+    chassis: Attr[Chassis]
     """Chassis number of DRS4 (1|2)."""
 
-    interface: Attr[L[1, 2]]
+    interface: Attr[Interface]
     """Interface (IF) number of DRS4 (1|2)."""
 
     integ_time: Attr[IntegTime]

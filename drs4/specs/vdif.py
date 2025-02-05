@@ -3,8 +3,7 @@ __all__ = ["VDIF", "open_vdif"]
 
 # standard library
 from dataclasses import dataclass
-from os import PathLike
-from typing import Literal as L, Union
+from typing import Literal as L
 
 
 # dependencies
@@ -12,11 +11,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
-
-
-# type hints
-IntegTime = L[100, 200, 500, 1000]  # ms
-StrPath = Union[PathLike[str], str]
+from .zarr import IntegTime, StrPath
 
 
 # constants
