@@ -1,5 +1,5 @@
-__all__ = ["drs4", "vdif"]
+__all__ = ["vdif", "zarr"]
 
 # submodules
-from . import drs4
 from . import vdif
+from . import zarr

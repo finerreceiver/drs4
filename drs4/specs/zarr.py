@@ -1,4 +1,4 @@
-__all__ = ["DRS4"]
+__all__ = ["Zarr"]
 
 
 # standard library
@@ -17,7 +17,7 @@ VDIF_DATA_BYTES = 1024
 VDIF_FRAME_BYTES = VDIF_HEADER_BYTES + VDIF_DATA_BYTES
 
 
-# data classes (dims)
+# data classes
 @dataclass
 class Time:
     data: Data[L["time"], L["M8[ns]"]]
@@ -25,17 +25,16 @@ class Time:
 
 
 @dataclass
-class Freq:
-    data: Data[L["freq"], np.float64]
-    long_name: Attr[str] = "Measured frequency"
-    units: Attr[str] = "GHz"
-
-
-# data classes (coords)
-@dataclass
 class Chan:
-    data: Data[L["freq"], np.int64]
+    data: Data[L["chan"], np.int64]
     long_name: Attr[str] = "Channel number"
+
+
+@dataclass
+class Freq:
+    data: Data[L["chan"], np.float64]
+    long_name: Attr[str] = "Intermediate frequency"
+    units: Attr[str] = "GHz"
 
 
 @dataclass
@@ -50,43 +49,41 @@ class SignalSB:
     long_name: Attr[str] = "Signal sideband"
 
 
-# data classes (vars)
 @dataclass
 class AutoUSB:
-    data: Data[tuple[L["time"], L["freq"]], np.float64]
+    data: Data[tuple[L["time"], L["chan"]], np.float64]
     long_name: Attr[str] = "Auto-correlation spectra of USB"
     units: Attr[str] = "Arbitrary unit"
 
 
 @dataclass
 class AutoLSB:
-    data: Data[tuple[L["time"], L["freq"]], np.float64]
+    data: Data[tuple[L["time"], L["chan"]], np.float64]
     long_name: Attr[str] = "Auto-correlation spectra of LSB"
     units: Attr[str] = "Arbitrary unit"
 
 
 @dataclass
 class Cross2SB:
-    data: Data[tuple[L["time"], L["freq"]], np.complex128]
+    data: Data[tuple[L["time"], L["chan"]], np.complex128]
     long_name: Attr[str] = "Cross-correlation spectra of 2SB"
     units: Attr[str] = "Arbitrary unit"
 
 
-# data class (dataset)
 @dataclass
-class DRS4(AsDataset):
-    """Data specifications of DRS4."""
+class Zarr(AsDataset):
+    """Data specifications of DRS4 Zarr."""
 
     # dims
     time: Coordof[Time]
     """Measured time in UTC."""
 
-    freq: Coordof[Freq]
-    """Measured frequency in GHz."""
-
-    # coords
     chan: Coordof[Chan]
     """Channel number (0-511)."""
+
+    # coords
+    freq: Coordof[Freq]
+    """Intermediate frequency in GHz."""
 
     signal_chan: Coordof[SignalChan]
     """Signal channel number (0-511)."""
