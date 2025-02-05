@@ -1,22 +1,31 @@
-__all__ = ["Zarr"]
+__all__ = ["Zarr", "open_vdifs"]
 
 
 # standard library
 from dataclasses import dataclass
 from os import PathLike
-from typing import Literal as L, Union
+from typing import Literal as L, Union, get_args
 
 
 # dependencies
 import numpy as np
+import xarray as xr
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
+from .vdif import open_vdif
 
 
 # type hints
 Chassis = L[1, 2]
-IntegTime = L[100, 200, 500, 1000]
+FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
+IntegTime = L[100, 200, 500, 1000]
 StrPath = Union[PathLike[str], str]
+
+
+# constants
+FREQ_INTERVAL = 0.02  # GHz
+FREQ_INNER = FREQ_INTERVAL * np.arange(0, 512)  # GHz
+FREQ_OUTER = FREQ_INTERVAL * np.arange(512, 1024)[::-1]  # GHz
 
 
 # data classes
@@ -107,8 +116,73 @@ class Zarr(AsDataset):
     chassis: Attr[Chassis]
     """Chassis number of DRS4 (1|2)."""
 
-    interface: Attr[Interface]
-    """Interface (IF) number of DRS4 (1|2)."""
+    freq_range: Attr[FreqRange]
+    """Intermediate frequency range (inner|outer)."""
 
     integ_time: Attr[IntegTime]
     """Spectral integration time in ms (100|200|500|1000)."""
+
+    interface: Attr[Interface]
+    """Interface (IF) number of DRS4 (1|2)."""
+
+
+def open_vdifs(
+    vdif_usb: StrPath,
+    vdif_lsb: StrPath,
+    /,
+    *,
+    chassis: Chassis = 1,
+    freq_range: FreqRange = "inner",
+    integ_time: IntegTime = 100,
+    interface: Interface = 1,
+) -> xr.Dataset:
+    """Open USB/LSB VDIF files as a Dataset.
+
+    Args:
+        vdif_usb: Path of input USB VDIF file.
+        vdif_lsb: Path of input LSB VDIF file.
+        chassis: Chassis number of DRS4.
+        freq_range: Intermediate frequency range.
+        integ_time: Spectral integration time in ms.
+        interface: Interface number of DRS4.
+
+    Returns:
+        Dataset of the input VDIF files.
+
+    """
+    if chassis not in get_args(Chassis):
+        raise ValueError("Value of chassis must be 1|2.")
+
+    if freq_range not in get_args(FreqRange):
+        raise ValueError("Value of freq_range must be inner|outer.")
+
+    if integ_time not in get_args(IntegTime):
+        raise ValueError("Value of integ_time must be 100|200|500|1000.")
+
+    if interface not in get_args(Interface):
+        raise ValueError("Value of interface must be 1|2.")
+
+    da_usb, da_lsb = xr.align(
+        open_vdif(vdif_usb, integ_time=integ_time),
+        open_vdif(vdif_lsb, integ_time=integ_time),
+        join="inner",
+    )
+
+    return Zarr.new(
+        # dims
+        time=da_usb.time.data,
+        chan=da_usb.chan.data,
+        # coords
+        freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER,
+        signal_chan=np.zeros(da_usb.shape[0]),
+        signal_SB=np.full(da_usb.shape[0], "N/A"),
+        # vars
+        auto_USB=da_usb.data,
+        auto_LSB=da_lsb.data,
+        cross_2SB=np.full(da_usb.shape, np.nan),
+        # attrs
+        chassis=chassis,
+        freq_range=freq_range,
+        integ_time=integ_time,
+        interface=interface,
+    )

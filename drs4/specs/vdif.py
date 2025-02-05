@@ -3,7 +3,8 @@ __all__ = ["VDIF", "open_vdif"]
 
 # standard library
 from dataclasses import dataclass
-from typing import Literal as L
+from os import PathLike
+from typing import Literal as L, Union, get_args
 
 
 # dependencies
@@ -11,7 +12,11 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
-from .zarr import IntegTime, StrPath
+
+
+# type hints
+IntegTime = L[100, 200, 500, 1000]
+StrPath = Union[PathLike[str], str]
 
 
 # constants
@@ -93,7 +98,10 @@ def open_vdif(
         DataArray of the input VDIF file.
 
     """
-    data = np.fromfile(
+    if integ_time not in get_args(IntegTime):
+        raise ValueError("Value of integ_time must be 100|200|500|1000.")
+
+    array = np.fromfile(
         vdif,
         dtype=[
             ("word_0", "u4"),
@@ -107,8 +115,8 @@ def open_vdif(
             ("data", ("f4", 256)),
         ],
     )
-    word_0 = Word(data["word_0"])
-    word_1 = Word(data["word_1"])
+    word_0 = Word(array["word_0"])
+    word_1 = Word(array["word_1"])
     is_first_half = word_1[0:24] % 2 == 0
     is_second_half = word_1[0:24] % 2 == 1
 
@@ -124,13 +132,13 @@ def open_vdif(
             VDIF.new(
                 time=time[is_first_half],
                 chan=CHAN_FIRST_HALF,
-                auto=data["data"][is_first_half],
+                auto=array["data"][is_first_half],
                 integ_time=integ_time,
             ),
             VDIF.new(
                 time=time[is_second_half],
                 chan=CHAN_SECOND_HALF,
-                auto=data["data"][is_second_half],
+                auto=array["data"][is_second_half],
                 integ_time=integ_time,
             ),
         ),
