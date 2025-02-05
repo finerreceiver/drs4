@@ -22,8 +22,6 @@ StrPath = Union[PathLike[str], str]
 # constants
 CHAN_FIRST_HALF = np.arange(0, 256)
 CHAN_SECOND_HALF = np.arange(256, 512)
-FREQ_FIRST_HALF = 0.02 * CHAN_FIRST_HALF  # GHz
-FREQ_SECOND_HALF = 0.02 * CHAN_SECOND_HALF  # GHz
 REF_EPOCH_ORIGIN = np.datetime64("2000", "Y")  # UTC
 REF_EPOCH_UNIT = np.timedelta64(6, "M")
 VDIF_HEADER_BYTES = 32
