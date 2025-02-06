@@ -39,7 +39,7 @@ StrPath = Union[PathLike[str], str]
 # constants
 GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
-OBSID_FORMAT = "%Y%m%dT%H%M%S"
+OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
 
 
 def dump(
@@ -158,10 +158,10 @@ def run(
         dest_port4 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT4", ""))
 
     if zarr_if1 is None:
-        zarr_if1 = f"drs4-chassis{chassis}-if1-{obsid}.zarr.zip"
+        zarr_if1 = f"drs4-{obsid}-chassis{chassis}-if1.zarr.zip"
 
     if zarr_if2 is None:
-        zarr_if2 = f"drs4-chassis{chassis}-if2-{obsid}.zarr.zip"
+        zarr_if2 = f"drs4-{obsid}-chassis{chassis}-if2.zarr.zip"
 
     if Path(zarr_if1).exists() and not overwrite:
         raise FileExistsError(zarr_if1)
