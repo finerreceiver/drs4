@@ -2,7 +2,9 @@ __all__ = ["run"]
 
 
 # standard library
+from collections.abc import Iterator
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from logging import getLogger
 from multiprocessing import Manager
@@ -20,7 +22,7 @@ from socket import (
 from tempfile import TemporaryDirectory
 from threading import Event
 from time import sleep
-from typing import Optional, Union
+from typing import Optional, Union, get_args
 
 
 # dependencies
@@ -110,21 +112,49 @@ def run(
     zarr_if1: Optional[StrPath] = None,
     zarr_if2: Optional[StrPath] = None,
     overwrite: bool = False,
-    work_dir: Optional[StrPath] = None,
+    workdir: Optional[StrPath] = None,
     # for measurement
-    duration: int = 3600,
     chassis: Chassis = 1,
+    duration: int = 3600,
     integ_time: IntegTime = 100,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     # for connection
-    drs4_dest_addr: Optional[str] = None,
-    drs4_dest_port1: Optional[int] = None,
-    drs4_dest_port2: Optional[int] = None,
-    drs4_dest_port3: Optional[int] = None,
-    drs4_dest_port4: Optional[int] = None,
+    dest_addr: Optional[str] = None,
+    dest_port1: Optional[int] = None,
+    dest_port2: Optional[int] = None,
+    dest_port3: Optional[int] = None,
+    dest_port4: Optional[int] = None,
 ) -> tuple[Path, Path]:
+    """"""
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
+
+    if chassis not in get_args(Chassis):
+        raise ValueError("Value of chassis must be 1|2.")
+
+    if freq_range_if1 not in get_args(FreqRange):
+        raise ValueError("Value of freq_range_if1 must be inner|outer.")
+
+    if freq_range_if2 not in get_args(FreqRange):
+        raise ValueError("Value of freq_range_if2 must be inner|outer.")
+
+    if integ_time not in get_args(IntegTime):
+        raise ValueError("Value of integ_time must be 100|200|500|1000.")
+
+    if dest_addr is None:
+        dest_addr = getenv(f"DRS4_CHASSIS{chassis}_DEST_ADDR", "")
+
+    if dest_port1 is None:
+        dest_port1 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT1", ""))
+
+    if dest_port2 is None:
+        dest_port2 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT2", ""))
+
+    if dest_port3 is None:
+        dest_port3 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT3", ""))
+
+    if dest_port4 is None:
+        dest_port4 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT4", ""))
 
     if zarr_if1 is None:
         zarr_if1 = f"drs4-chassis{chassis}-if1-{obsid}.zarr.zip"
@@ -138,30 +168,25 @@ def run(
     if Path(zarr_if2).exists() and not overwrite:
         raise FileExistsError(zarr_if2)
 
-    drs4_dest_addr = drs4_dest_addr or getenv("DRS4_DEST_ADDR", "")
-    drs4_dest_port1 = drs4_dest_port1 or int(getenv("DRS4_DEST_PORT1", 0))
-    drs4_dest_port2 = drs4_dest_port2 or int(getenv("DRS4_DEST_PORT2", 0))
-    drs4_dest_port3 = drs4_dest_port3 or int(getenv("DRS4_DEST_PORT3", 0))
-    drs4_dest_port4 = drs4_dest_port4 or int(getenv("DRS4_DEST_PORT4", 0))
-
     with (
         Manager() as manager,
         ProcessPoolExecutor(4) as executor,
-        TemporaryDirectory() as tempdir,
+        set_workdir(workdir) as workdir,
     ):
-        vdif_in1 = Path(tempdir) / f"drs4-chassis{chassis}-in1-{obsid}.vdif"
-        vdif_in2 = Path(tempdir) / f"drs4-chassis{chassis}-in2-{obsid}.vdif"
-        vdif_in3 = Path(tempdir) / f"drs4-chassis{chassis}-in3-{obsid}.vdif"
-        vdif_in4 = Path(tempdir) / f"drs4-chassis{chassis}-in4-{obsid}.vdif"
-
         cancel = manager.Event()
-        executor.submit(dump, vdif_in1, drs4_dest_addr, drs4_dest_port1, cancel=cancel)
-        executor.submit(dump, vdif_in2, drs4_dest_addr, drs4_dest_port2, cancel=cancel)
-        executor.submit(dump, vdif_in3, drs4_dest_addr, drs4_dest_port3, cancel=cancel)
-        executor.submit(dump, vdif_in4, drs4_dest_addr, drs4_dest_port4, cancel=cancel)
+        vdif_in1 = Path(workdir) / f"drs4-chassis{chassis}-in1-{obsid}.vdif"
+        vdif_in2 = Path(workdir) / f"drs4-chassis{chassis}-in2-{obsid}.vdif"
+        vdif_in3 = Path(workdir) / f"drs4-chassis{chassis}-in3-{obsid}.vdif"
+        vdif_in4 = Path(workdir) / f"drs4-chassis{chassis}-in4-{obsid}.vdif"
+        executor.submit(dump, vdif_in1, dest_addr, dest_port1, cancel=cancel)
+        executor.submit(dump, vdif_in2, dest_addr, dest_port2, cancel=cancel)
+        executor.submit(dump, vdif_in3, dest_addr, dest_port3, cancel=cancel)
+        executor.submit(dump, vdif_in4, dest_addr, dest_port4, cancel=cancel)
 
         try:
             sleep(int(duration))
+        except KeyboardInterrupt:
+            LOGGER.warning("Data acquisition interrupted by user.")
         finally:
             cancel.set()
 
@@ -188,3 +213,13 @@ def run(
         ds_if1.to_zarr(zarr_if1, mode="w")
         ds_if2.to_zarr(zarr_if2, mode="w")
         return Path(zarr_if1).resolve(), Path(zarr_if2).resolve()
+
+
+@contextmanager
+def set_workdir(workdir: Optional[StrPath] = None, /) -> Iterator[Path]:
+    """Set the working directory for output VDIF files."""
+    if workdir is None:
+        with TemporaryDirectory() as workdir:
+            yield Path(workdir)
+    else:
+        yield Path(workdir).expanduser()
