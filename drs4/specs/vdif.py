@@ -2,7 +2,7 @@ __all__ = ["VDIF", "open_vdif"]
 
 
 # standard library
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import PathLike
 from typing import Literal as L, Union, get_args
 
@@ -67,6 +67,9 @@ class VDIF(AsDataArray):
     # attrs
     integ_time: Attr[IntegTime]
     """Spectral integration time in ms (100|200|500|1000)."""
+
+    version: Attr[int] = field(default=0, init=False)
+    """Version of the data specifications."""
 
 
 @dataclass(frozen=True)

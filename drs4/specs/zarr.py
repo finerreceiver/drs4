@@ -2,7 +2,7 @@ __all__ = ["Zarr", "open_vdifs"]
 
 
 # standard library
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import PathLike
 from typing import Literal as L, Union, get_args
 
@@ -124,6 +124,9 @@ class Zarr(AsDataset):
 
     interface: Attr[Interface]
     """Interface (IF) number of DRS4 (1|2)."""
+
+    version: Attr[int] = field(default=0, init=False)
+    """Version of the data specifications."""
 
 
 def open_vdifs(
