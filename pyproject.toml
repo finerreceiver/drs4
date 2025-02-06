@@ -21,6 +21,7 @@ pytest = "^8.0"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+reportUnknownMemberType = "warning"
 
 [build-system]
 requires = ["poetry-core"]
