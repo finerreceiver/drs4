@@ -112,6 +112,7 @@ def run(
     zarr_if1: Optional[StrPath] = None,
     zarr_if2: Optional[StrPath] = None,
     overwrite: bool = False,
+    progress: bool = False,
     workdir: Optional[StrPath] = None,
     # for measurement
     chassis: Chassis = 1,
@@ -172,6 +173,7 @@ def run(
         Manager() as manager,
         ProcessPoolExecutor(4) as executor,
         set_workdir(workdir) as workdir,
+        tqdm(disable=not progress, total=int(duration), unit="s") as bar,
     ):
         cancel = manager.Event()
         vdif_in1 = Path(workdir) / f"drs4-chassis{chassis}-in1-{obsid}.vdif"
@@ -184,7 +186,9 @@ def run(
         executor.submit(dump, vdif_in4, dest_addr, dest_port4, cancel=cancel)
 
         try:
-            sleep(int(duration))
+            for _ in range(int(duration)):
+                sleep(1)
+                bar.update(1)
         except KeyboardInterrupt:
             LOGGER.warning("Data acquisition interrupted by user.")
         finally:
