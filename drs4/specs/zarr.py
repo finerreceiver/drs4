@@ -19,6 +19,7 @@ Chassis = L[1, 2]
 FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
 IntegTime = L[100, 200, 500, 1000]
+SideBand = L["USB", "LSB", "NA"]
 StrPath = Union[PathLike[str], str]
 
 
@@ -100,7 +101,7 @@ class Zarr(AsDataset):
     """Signal channel number (0-511)."""
 
     signal_SB: Coordof[SignalSB]
-    """Signal sideband (USB|LSB|N/A)."""
+    """Signal sideband (USB|LSB|NA)."""
 
     # vars
     auto_USB: Dataof[AutoUSB]
@@ -138,6 +139,8 @@ def open_vdifs(
     freq_range: FreqRange = "inner",
     integ_time: IntegTime = 100,
     interface: Interface = 1,
+    signal_chan: int = 0,
+    signal_SB: SideBand = "NA",
 ) -> xr.Dataset:
     """Open USB/LSB VDIF files as a Dataset.
 
@@ -148,6 +151,8 @@ def open_vdifs(
         freq_range: Intermediate frequency range.
         integ_time: Spectral integration time in ms.
         interface: Interface number of DRS4.
+        signal_chan: Signal channel number.
+        signal_SB: Signal sideband.
 
     Returns:
         Dataset of the input VDIF files.
@@ -177,8 +182,8 @@ def open_vdifs(
         chan=da_usb.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER,
-        signal_chan=np.zeros(da_usb.shape[0]),
-        signal_SB=np.full(da_usb.shape[0], "N/A"),
+        signal_chan=np.full(da_usb.shape[0], signal_chan),
+        signal_SB=np.full(da_usb.shape[0], signal_SB),
         # vars
         auto_USB=da_usb.data,
         auto_LSB=da_lsb.data,
