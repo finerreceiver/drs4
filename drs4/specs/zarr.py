@@ -19,6 +19,7 @@ Chassis = L[1, 2]
 FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
 IntegTime = L[100, 200, 500, 1000]
+Join = L["outer", "inner", "left", "right", "exact", "override"]
 SideBand = L["USB", "LSB", "NA"]
 StrPath = Union[PathLike[str], str]
 
@@ -139,6 +140,7 @@ def open_vdifs(
     freq_range: FreqRange = "inner",
     integ_time: IntegTime = 100,
     interface: Interface = 1,
+    join: Join = "inner",
     signal_chan: int = 0,
     signal_SB: SideBand = "NA",
 ) -> xr.Dataset:
@@ -151,6 +153,7 @@ def open_vdifs(
         freq_range: Intermediate frequency range.
         integ_time: Spectral integration time in ms.
         interface: Interface number of DRS4.
+        join: Method for joining the VDIF files.
         signal_chan: Signal channel number.
         signal_SB: Signal sideband.
 
@@ -171,9 +174,9 @@ def open_vdifs(
         raise ValueError("Value of interface must be 1|2.")
 
     da_usb, da_lsb = xr.align(
-        open_vdif(vdif_usb, integ_time=integ_time),
-        open_vdif(vdif_lsb, integ_time=integ_time),
-        join="inner",
+        open_vdif(vdif_usb, integ_time=integ_time, join=join),
+        open_vdif(vdif_lsb, integ_time=integ_time, join=join),
+        join=join,
     )
 
     return Zarr.new(

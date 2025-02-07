@@ -22,7 +22,7 @@ from socket import (
 from tempfile import TemporaryDirectory
 from threading import Event
 from time import sleep
-from typing import Optional, Union, get_args
+from typing import Literal as L, Optional, Union, get_args
 
 
 # dependencies
@@ -33,6 +33,7 @@ from .specs.zarr import Chassis, FreqRange, IntegTime, open_vdifs
 
 
 # type hints
+Join = L["outer", "inner", "left", "right", "exact", "override"]
 StrPath = Union[PathLike[str], str]
 
 
@@ -53,9 +54,10 @@ def auto(
     # for measurement
     chassis: Chassis = 1,
     duration: int = 3600,
-    integ_time: IntegTime = 100,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
+    integ_time: IntegTime = 100,
+    join: Join = "inner",
     # for connection
     dest_addr: Optional[str] = None,
     dest_port1: Optional[int] = None,
@@ -112,10 +114,10 @@ def auto(
         tqdm(disable=not progress, total=int(duration), unit="s") as bar,
     ):
         cancel = manager.Event()
-        vdif_in1 = Path(workdir) / f"drs4-chassis{chassis}-in1-{obsid}.vdif"
-        vdif_in2 = Path(workdir) / f"drs4-chassis{chassis}-in2-{obsid}.vdif"
-        vdif_in3 = Path(workdir) / f"drs4-chassis{chassis}-in3-{obsid}.vdif"
-        vdif_in4 = Path(workdir) / f"drs4-chassis{chassis}-in4-{obsid}.vdif"
+        vdif_in1 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in1.vdif"
+        vdif_in2 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in2.vdif"
+        vdif_in3 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in3.vdif"
+        vdif_in4 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in4.vdif"
         executor.submit(dump, vdif_in1, dest_addr, dest_port1, cancel=cancel)
         executor.submit(dump, vdif_in2, dest_addr, dest_port2, cancel=cancel)
         executor.submit(dump, vdif_in3, dest_addr, dest_port3, cancel=cancel)
@@ -138,6 +140,7 @@ def auto(
                 freq_range=freq_range_if1,
                 integ_time=integ_time,
                 interface=1,
+                join=join,
             ),
             open_vdifs(
                 vdif_in3,
@@ -146,8 +149,9 @@ def auto(
                 freq_range=freq_range_if2,
                 integ_time=integ_time,
                 interface=2,
+                join=join,
             ),
-            join="inner",
+            join=join,
         )
 
         ds_if1.to_zarr(zarr_if1, mode="w")
