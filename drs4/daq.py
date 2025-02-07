@@ -44,8 +44,8 @@ OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
 
 def dump(
     vdif: Union[Path, str],
-    addr: str,
-    port: int,
+    dest_addr: str,
+    dest_port: int,
     /,
     *,
     group: str = GROUP,
@@ -58,8 +58,8 @@ def dump(
 
     Args:
         vdif: Path of the output VDIF file.
-        addr: Destination IP address.
-        port: Destination port number.
+        dest_addr: Destination IP address.
+        dest_port: Destination port number.
         group: Multicast group IP address.
         cancel: Event object to cancel dumping.
         timeout: Timeout period in units of seconds.
@@ -76,8 +76,8 @@ def dump(
     if not overwrite and Path(vdif).exists():
         raise FileExistsError(vdif)
 
-    prefix = f"[{addr=}, {port=}]"
-    mreq = inet_aton(group) + inet_aton(addr)
+    prefix = f"[{dest_addr=}, {dest_port=}]"
+    mreq = inet_aton(group) + inet_aton(dest_addr)
 
     with (
         open(vdif, "wb") as file,
@@ -86,7 +86,7 @@ def dump(
     ):
         # create socket
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        sock.bind(("", port))
+        sock.bind(("", dest_port))
         sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
         sock.settimeout(timeout)
 
