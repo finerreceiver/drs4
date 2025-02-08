@@ -15,10 +15,11 @@ from .vdif import open_vdif
 
 
 # type hints
+Channel = int
 Chassis = L[1, 2]
 FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
-IntegTime = L[100, 200, 500, 1000]
+IntegTime = L[100, 200, 500, 1000]  # ms
 Join = L["outer", "inner", "left", "right", "exact", "override"]
 SideBand = L["USB", "LSB", "NA"]
 StrPath = Union[PathLike[str], str]
@@ -85,7 +86,7 @@ class Cross2SB:
 
 @dataclass
 class Zarr(AsDataset):
-    """Data specifications of DRS4 Zarr."""
+    """Data specification of DRS4 Zarr."""
 
     # dims
     time: Coordof[Time]
@@ -101,25 +102,22 @@ class Zarr(AsDataset):
     signal_chan: Coordof[SignalChan]
     """Signal channel number (0-511)."""
 
-    signal_SB: Coordof[SignalSB]
+    signal_sb: Coordof[SignalSB]
     """Signal sideband (USB|LSB|NA)."""
 
     # vars
-    auto_USB: Dataof[AutoUSB]
+    auto_usb: Dataof[AutoUSB]
     """Auto-correlation spectra of USB."""
 
-    auto_LSB: Dataof[AutoLSB]
+    auto_lsb: Dataof[AutoLSB]
     """Auto-correlation spectra of LSB."""
 
-    cross_2SB: Dataof[Cross2SB]
+    cross_2sb: Dataof[Cross2SB]
     """Cross-correlation spectra of 2SB (USB x LSB*)."""
 
     # attrs
     chassis: Attr[Chassis]
     """Chassis number of DRS4 (1|2)."""
-
-    freq_range: Attr[FreqRange]
-    """Intermediate frequency range (inner|outer)."""
 
     integ_time: Attr[IntegTime]
     """Spectral integration time in ms (100|200|500|1000)."""
@@ -127,8 +125,8 @@ class Zarr(AsDataset):
     interface: Attr[Interface]
     """Interface (IF) number of DRS4 (1|2)."""
 
-    version: Attr[int] = field(default=0, init=False)
-    """Version of the data specifications."""
+    spec_version: Attr[int] = field(default=0, init=False)
+    """Version of the data specification."""
 
 
 def open_vdifs(
@@ -141,8 +139,8 @@ def open_vdifs(
     freq_range: FreqRange = "inner",
     integ_time: Optional[IntegTime] = None,
     interface: Interface = 1,
-    signal_chan: int = 0,
-    signal_SB: SideBand = "NA",
+    signal_chan: Channel = 0,
+    signal_sb: SideBand = "NA",
     # for file saving
     join: Join = "inner",
 ) -> xr.Dataset:
@@ -157,7 +155,7 @@ def open_vdifs(
             If not specified, it will be inferred from the VDIF files.
         interface: Interface number of DRS4 (1|2).
         signal_chan: Signal channel number (0-511).
-        signal_SB: Signal sideband (USB|LSB|NA).
+        signal_sb: Signal sideband (USB|LSB|NA).
         join: Method for joining the VDIF files.
 
     Returns:
@@ -197,14 +195,13 @@ def open_vdifs(
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER,
         signal_chan=np.full(da_usb.shape[0], signal_chan),
-        signal_SB=np.full(da_usb.shape[0], signal_SB),
+        signal_sb=np.full(da_usb.shape[0], signal_sb),
         # vars
-        auto_USB=da_usb.data,
-        auto_LSB=da_lsb.data,
-        cross_2SB=np.full(da_usb.shape, np.nan),
+        auto_usb=da_usb.data,
+        auto_lsb=da_lsb.data,
+        cross_2sb=np.full(da_usb.shape, np.nan),
         # attrs
         chassis=chassis,
-        freq_range=freq_range,
         integ_time=da_usb.integ_time,
         interface=interface,
     )

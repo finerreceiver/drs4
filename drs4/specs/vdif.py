@@ -52,7 +52,7 @@ class Auto:
 
 @dataclass
 class VDIF(AsDataArray):
-    """Data specifications of DRS4 VDIF."""
+    """Data specification of DRS4 VDIF."""
 
     # dims
     time: Coordof[Time]
@@ -69,8 +69,8 @@ class VDIF(AsDataArray):
     integ_time: Attr[IntegTime]
     """Spectral integration time in ms (100|200|500|1000)."""
 
-    version: Attr[int] = field(default=0, init=False)
-    """Version of the data specifications."""
+    spec_version: Attr[int] = field(default=0, init=False)
+    """Version of the data specification."""
 
 
 @dataclass(frozen=True)
