@@ -4,7 +4,7 @@ __all__ = ["VDIF", "open_vdif"]
 # standard library
 from dataclasses import dataclass, field
 from os import PathLike
-from typing import Literal as L, Union, get_args
+from typing import Literal as L, Optional, Union, get_args
 
 
 # dependencies
@@ -90,23 +90,27 @@ def open_vdif(
     vdif: StrPath,
     /,
     *,
-    integ_time: IntegTime = 100,
+    integ_time: Optional[IntegTime] = None,
     join: Join = "inner",
 ) -> xr.DataArray:
     """Open a VDIF file as a DataArray.
 
     Args:
         vdif: Path of input VDIF file.
-        integ_time: Spectral integration time in ms.
-        join: Method of joining the first and second-half spectra.
+        integ_time: Spectral integration time in ms (100|200|500|1000).
+            If not specified, it will be inferred from the VDIF file.
+        join: Method of joining the first- and second-half spectra.
 
     Returns:
         DataArray of the input VDIF file.
 
-    """
-    if integ_time not in get_args(IntegTime):
-        raise ValueError("Value of integ_time must be 100|200|500|1000.")
+    Raises:
+        RuntimeError: Raised if the spectral integration time
+            cannot be inferred from the VDIF file (frame number).
+        ValueError: Raised if the given (or inferred) spectral
+            integration time is other than 100|200|500|1000 ms.
 
+    """
     array = np.fromfile(
         vdif,
         dtype=[
@@ -123,31 +127,49 @@ def open_vdif(
     )
     word_0 = Word(array["word_0"])
     word_1 = Word(array["word_1"])
-    is_first_half = word_1[0:24] % 2 == 0
-    is_second_half = word_1[0:24] % 2 == 1
+    seconds = word_0[0:30]
+    frame_num = word_1[0:24]
+    ref_epoch = word_1[24:30]
+
+    if integ_time is None:
+        integ_time = infer_integ_time(frame_num)
+
+    if integ_time not in get_args(IntegTime):
+        raise ValueError("Value of integ_time must be 100|200|500|1000.")
 
     time = (
         REF_EPOCH_ORIGIN
-        + REF_EPOCH_UNIT * word_1[24:30]
-        + np.timedelta64(1, "s") * word_0[0:30]
-        + np.timedelta64(integ_time, "ms") * (word_1[0:24] // 2)
+        + REF_EPOCH_UNIT * ref_epoch
+        + np.timedelta64(1, "s") * seconds
+        + np.timedelta64(integ_time, "ms") * (frame_num // 2)
     )
 
     return xr.concat(
         (
             VDIF.new(
-                time=time[is_first_half],
+                time=time[frame_num % 2 == 0],
                 chan=CHAN_FIRST_HALF,
-                auto=array["data"][is_first_half],
+                auto=array["data"][frame_num % 2 == 0],
                 integ_time=integ_time,
             ),
             VDIF.new(
-                time=time[is_second_half],
+                time=time[frame_num % 2 == 1],
                 chan=CHAN_SECOND_HALF,
-                auto=array["data"][is_second_half],
+                auto=array["data"][frame_num % 2 == 1],
                 integ_time=integ_time,
             ),
         ),
         dim="chan",
         join=join,
     )
+
+
+def infer_integ_time(frame_num: NDArray[np.int_], /) -> IntegTime:
+    """Infer spectral integration time from frame number."""
+    if sum(frame_num == (frame_max := max(frame_num))) < 2:
+        raise RuntimeError("Could not infer spectral integration time.")
+
+    if (integ_time := 2000 // (frame_max + 1)) not in get_args(IntegTime):
+        raise ValueError("Got invalid spectral integration time.")
+
+    return integ_time

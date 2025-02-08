@@ -4,7 +4,7 @@ __all__ = ["Zarr", "open_vdifs"]
 # standard library
 from dataclasses import dataclass, field
 from os import PathLike
-from typing import Literal as L, Union, get_args
+from typing import Literal as L, Optional, Union, get_args
 
 
 # dependencies
@@ -136,29 +136,37 @@ def open_vdifs(
     vdif_lsb: StrPath,
     /,
     *,
+    # for measurement
     chassis: Chassis = 1,
     freq_range: FreqRange = "inner",
-    integ_time: IntegTime = 100,
+    integ_time: Optional[IntegTime] = None,
     interface: Interface = 1,
-    join: Join = "inner",
     signal_chan: int = 0,
     signal_SB: SideBand = "NA",
+    # for file saving
+    join: Join = "inner",
 ) -> xr.Dataset:
     """Open USB/LSB VDIF files as a Dataset.
 
     Args:
         vdif_usb: Path of input USB VDIF file.
         vdif_lsb: Path of input LSB VDIF file.
-        chassis: Chassis number of DRS4.
-        freq_range: Intermediate frequency range.
-        integ_time: Spectral integration time in ms.
-        interface: Interface number of DRS4.
+        chassis: Chassis number of DRS4 (1|2).
+        freq_range: Intermediate frequency range (inner|outer).
+        integ_time: Spectral integration time in ms (100|200|500|1000).
+            If not specified, it will be inferred from the VDIF files.
+        interface: Interface number of DRS4 (1|2).
+        signal_chan: Signal channel number (0-511).
+        signal_SB: Signal sideband (USB|LSB|NA).
         join: Method for joining the VDIF files.
-        signal_chan: Signal channel number.
-        signal_SB: Signal sideband.
 
     Returns:
         Dataset of the input VDIF files.
+
+    Raises:
+        RuntimeError: Raised if USB/LSB spectral integration times are not same.
+        ValueError: Raised if the given value of either chassis, freq_range,
+            integ_time, or interface is not valid.
 
     """
     if chassis not in get_args(Chassis):
@@ -179,6 +187,9 @@ def open_vdifs(
         join=join,
     )
 
+    if da_usb.integ_time != da_lsb.integ_time:
+        raise RuntimeError("USB/LSB spectral integration times must be same.")
+
     return Zarr.new(
         # dims
         time=da_usb.time.data,
@@ -194,6 +205,6 @@ def open_vdifs(
         # attrs
         chassis=chassis,
         freq_range=freq_range,
-        integ_time=integ_time,
+        integ_time=da_usb.integ_time,
         interface=interface,
     )
