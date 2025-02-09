@@ -16,8 +16,8 @@ from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
 
 # type hints
 IntegTime = L[100, 200, 500, 1000]
-Join = L["outer", "inner", "left", "right", "exact", "override"]
 StrPath = Union[PathLike[str], str]
+VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
 # constants
@@ -90,8 +90,10 @@ def open_vdif(
     vdif: StrPath,
     /,
     *,
+    # for measurement (optional)
     integ_time: Optional[IntegTime] = None,
-    join: Join = "inner",
+    # for file loading (optional)
+    vdif_join: VDIFJoin = "inner",
 ) -> xr.DataArray:
     """Open a VDIF file as a DataArray.
 
@@ -99,7 +101,7 @@ def open_vdif(
         vdif: Path of input VDIF file.
         integ_time: Spectral integration time in ms (100|200|500|1000).
             If not specified, it will be inferred from the VDIF file.
-        join: Method of joining the first- and second-half spectra.
+        vdif_join: Method of joining the first- and second-half spectra.
 
     Returns:
         DataArray of the input VDIF file.
@@ -135,7 +137,7 @@ def open_vdif(
         integ_time = infer_integ_time(frame_num)
 
     if integ_time not in get_args(IntegTime):
-        raise ValueError("Value of integ_time must be 100|200|500|1000.")
+        raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
     time = (
         REF_EPOCH_ORIGIN
@@ -160,7 +162,7 @@ def open_vdif(
             ),
         ),
         dim="chan",
-        join=join,
+        join=vdif_join,
     )
 
 
@@ -170,6 +172,6 @@ def infer_integ_time(frame_num: NDArray[np.int_], /) -> IntegTime:
         raise RuntimeError("Could not infer spectral integration time.")
 
     if (integ_time := 2000 // (frame_max + 1)) not in get_args(IntegTime):
-        raise ValueError("Got invalid spectral integration time.")
+        raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
     return integ_time

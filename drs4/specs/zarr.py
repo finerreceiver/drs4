@@ -20,9 +20,9 @@ Chassis = L[1, 2]
 FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
 IntegTime = L[100, 200, 500, 1000]  # ms
-Join = L["outer", "inner", "left", "right", "exact", "override"]
-SideBand = L["USB", "LSB", "NA"]
+SideBand = L["USB", "LSB"]
 StrPath = Union[PathLike[str], str]
+VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
 # constants
@@ -100,7 +100,7 @@ class Zarr(AsDataset):
     """Intermediate frequency in GHz."""
 
     signal_chan: Coordof[SignalChan]
-    """Signal channel number (0-511)."""
+    """Signal channel number (0-511|-1)."""
 
     signal_sb: Coordof[SignalSB]
     """Signal sideband (USB|LSB|NA)."""
@@ -119,11 +119,11 @@ class Zarr(AsDataset):
     chassis: Attr[Chassis]
     """Chassis number of DRS4 (1|2)."""
 
-    integ_time: Attr[IntegTime]
-    """Spectral integration time in ms (100|200|500|1000)."""
-
     interface: Attr[Interface]
     """Interface (IF) number of DRS4 (1|2)."""
+
+    integ_time: Attr[IntegTime]
+    """Spectral integration time in ms (100|200|500|1000)."""
 
     spec_version: Attr[int] = field(default=0, init=False)
     """Version of the data specification."""
@@ -134,15 +134,16 @@ def open_vdifs(
     vdif_lsb: StrPath,
     /,
     *,
-    # for measurement
-    chassis: Chassis = 1,
-    freq_range: FreqRange = "inner",
+    # for measurement (required)
+    chassis: Chassis,
+    interface: Interface,
+    freq_range: FreqRange,
+    # for measurement (optional)
     integ_time: Optional[IntegTime] = None,
-    interface: Interface = 1,
-    signal_chan: Channel = 0,
-    signal_sb: SideBand = "NA",
-    # for file saving
-    join: Join = "inner",
+    signal_chan: Optional[Channel] = None,
+    signal_sb: Optional[SideBand] = None,
+    # for file loading (optional)
+    vdif_join: VDIFJoin = "inner",
 ) -> xr.Dataset:
     """Open USB/LSB VDIF files as a Dataset.
 
@@ -150,13 +151,15 @@ def open_vdifs(
         vdif_usb: Path of input USB VDIF file.
         vdif_lsb: Path of input LSB VDIF file.
         chassis: Chassis number of DRS4 (1|2).
+        interface: Interface number of DRS4 (1|2).
         freq_range: Intermediate frequency range (inner|outer).
         integ_time: Spectral integration time in ms (100|200|500|1000).
             If not specified, it will be inferred from the VDIF files.
-        interface: Interface number of DRS4 (1|2).
         signal_chan: Signal channel number (0-511).
-        signal_sb: Signal sideband (USB|LSB|NA).
-        join: Method for joining the VDIF files.
+            If not specified, -1 (missing indicator) will be assigned.
+        signal_sb: Signal sideband (USB|LSB).
+            If not specified, NA (missing indicator) will be assigned.
+        vdif_join: Method for joining the VDIF files.
 
     Returns:
         Dataset of the input VDIF files.
@@ -168,21 +171,18 @@ def open_vdifs(
 
     """
     if chassis not in get_args(Chassis):
-        raise ValueError("Value of chassis must be 1|2.")
-
-    if freq_range not in get_args(FreqRange):
-        raise ValueError("Value of freq_range must be inner|outer.")
-
-    if integ_time not in get_args(IntegTime):
-        raise ValueError("Value of integ_time must be 100|200|500|1000.")
+        raise ValueError("Chassis number must be 1|2.")
 
     if interface not in get_args(Interface):
-        raise ValueError("Value of interface must be 1|2.")
+        raise ValueError("Interface number must be 1|2.")
+
+    if freq_range not in get_args(FreqRange):
+        raise ValueError("Spectral integration time must be inner|outer.")
 
     da_usb, da_lsb = xr.align(
-        open_vdif(vdif_usb, integ_time=integ_time, join=join),
-        open_vdif(vdif_lsb, integ_time=integ_time, join=join),
-        join=join,
+        open_vdif(vdif_usb, integ_time=integ_time, vdif_join=vdif_join),
+        open_vdif(vdif_lsb, integ_time=integ_time, vdif_join=vdif_join),
+        join=vdif_join,
     )
 
     if da_usb.integ_time != da_lsb.integ_time:
@@ -202,6 +202,6 @@ def open_vdifs(
         cross_2sb=np.full(da_usb.shape, np.nan),
         # attrs
         chassis=chassis,
-        integ_time=da_usb.integ_time,
         interface=interface,
+        integ_time=da_usb.integ_time,
     )
