@@ -194,8 +194,14 @@ def open_vdifs(
         chan=da_usb.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER,
-        signal_chan=np.full(da_usb.shape[0], signal_chan),
-        signal_sb=np.full(da_usb.shape[0], signal_sb),
+        signal_chan=np.full(
+            da_usb.shape[0],
+            signal_chan if signal_chan is not None else -1,
+        ),
+        signal_sb=np.full(
+            da_usb.shape[0],
+            signal_sb if signal_sb is not None else "NA",
+        ),
         # vars
         auto_usb=da_usb.data,
         auto_lsb=da_lsb.data,
