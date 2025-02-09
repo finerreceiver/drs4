@@ -29,7 +29,15 @@ from typing import Literal as L, Optional, Union, get_args
 import xarray as xr
 from tqdm import tqdm
 from .specs.vdif import VDIF_FRAME_BYTES
-from .specs.zarr import Chassis, FreqRange, IntegTime, open_vdifs
+from .specs.zarr import (
+    Channel,
+    Chassis,
+    FreqRange,
+    Interface,
+    IntegTime,
+    SideBand,
+    open_vdifs,
+)
 
 
 # type hints
@@ -45,40 +53,35 @@ OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
 
 def auto(
     *,
-    # for file saving
-    zarr_if1: Optional[StrPath] = None,
-    zarr_if2: Optional[StrPath] = None,
-    overwrite: bool = False,
-    progress: bool = False,
-    workdir: Optional[StrPath] = None,
-    # for measurement
-    chassis: Chassis = 1,
-    duration: int = 3600,
+    # for measurement (required)
+    chassis: Chassis,
+    duration: int,
+    # for measurement (optional)
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 100,
+    signal_if: Optional[Interface] = None,
+    signal_sb: Optional[SideBand] = None,
+    signal_chan: Optional[Channel] = None,
+    # for file saving (optional)
+    append: bool = False,
+    integrate: bool = False,
     join: Join = "inner",
-    # for connection
+    overwrite: bool = False,
+    progress: bool = False,
+    workdir: Optional[StrPath] = None,
+    zarr_if1: Optional[StrPath] = None,
+    zarr_if2: Optional[StrPath] = None,
+    # for connection (optional)
     dest_addr: Optional[str] = None,
     dest_port1: Optional[int] = None,
     dest_port2: Optional[int] = None,
     dest_port3: Optional[int] = None,
     dest_port4: Optional[int] = None,
+    timeout: Optional[float] = None,
 ) -> tuple[Path, Path]:
     """"""
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
-
-    if chassis not in get_args(Chassis):
-        raise ValueError("Value of chassis must be 1|2.")
-
-    if freq_range_if1 not in get_args(FreqRange):
-        raise ValueError("Value of freq_range_if1 must be inner|outer.")
-
-    if freq_range_if2 not in get_args(FreqRange):
-        raise ValueError("Value of freq_range_if2 must be inner|outer.")
-
-    if integ_time not in get_args(IntegTime):
-        raise ValueError("Value of integ_time must be 100|200|500|1000.")
 
     if dest_addr is None:
         dest_addr = getenv(f"DRS4_CHASSIS{chassis}_DEST_ADDR", "")
@@ -101,10 +104,25 @@ def auto(
     if zarr_if2 is None:
         zarr_if2 = f"drs4-{obsid}-chassis{chassis}-if2.zarr.zip"
 
-    if Path(zarr_if1).exists() and not overwrite:
+    if append and overwrite:
+        raise ValueError("")
+
+    if chassis not in get_args(Chassis):
+        raise ValueError("Chassis number must be 1|2.")
+
+    if freq_range_if1 not in get_args(FreqRange):
+        raise ValueError("Frequency range must be inner|outer.")
+
+    if freq_range_if2 not in get_args(FreqRange):
+        raise ValueError("Frequency range must be inner|outer.")
+
+    if integ_time not in get_args(IntegTime):
+        raise ValueError("Spectral integration time must be 100|200|500|1000.")
+
+    if (zarr_if1 := Path(zarr_if1)).exists() and not append and not overwrite:
         raise FileExistsError(zarr_if1)
 
-    if Path(zarr_if2).exists() and not overwrite:
+    if (zarr_if2 := Path(zarr_if2)).exists() and not append and not overwrite:
         raise FileExistsError(zarr_if2)
 
     with (
@@ -114,14 +132,42 @@ def auto(
         tqdm(disable=not progress, total=int(duration), unit="s") as bar,
     ):
         cancel = manager.Event()
-        vdif_in1 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in1.vdif"
-        vdif_in2 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in2.vdif"
-        vdif_in3 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in3.vdif"
-        vdif_in4 = Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in4.vdif"
-        executor.submit(dump, vdif_in1, dest_addr, dest_port1, cancel=cancel)
-        executor.submit(dump, vdif_in2, dest_addr, dest_port2, cancel=cancel)
-        executor.submit(dump, vdif_in3, dest_addr, dest_port3, cancel=cancel)
-        executor.submit(dump, vdif_in4, dest_addr, dest_port4, cancel=cancel)
+        executor.submit(
+            dump,
+            vdif_in1 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in1.vdif",
+            dest_addr=dest_addr,
+            dest_port=dest_port1,
+            cancel=cancel,
+            timeout=timeout,
+            overwrite=overwrite,
+        )
+        executor.submit(
+            dump,
+            vdif_in2 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in2.vdif",
+            dest_addr=dest_addr,
+            dest_port=dest_port2,
+            cancel=cancel,
+            timeout=timeout,
+            overwrite=overwrite,
+        )
+        executor.submit(
+            dump,
+            vdif_in3 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in3.vdif",
+            dest_addr=dest_addr,
+            dest_port=dest_port3,
+            cancel=cancel,
+            timeout=timeout,
+            overwrite=overwrite,
+        )
+        executor.submit(
+            dump,
+            vdif_in4 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in4.vdif",
+            dest_addr=dest_addr,
+            dest_port=dest_port4,
+            cancel=cancel,
+            timeout=timeout,
+            overwrite=overwrite,
+        )
 
         try:
             for _ in range(int(duration)):
@@ -136,36 +182,61 @@ def auto(
             open_vdifs(
                 vdif_in1,
                 vdif_in2,
+                # for measurement (required)
                 chassis=chassis,
-                freq_range=freq_range_if1,
-                integ_time=integ_time,
                 interface=1,
-                join=join,
+                freq_range=freq_range_if1,
+                # for measurement (optional)
+                integ_time=integ_time,
+                signal_chan=signal_chan if signal_if == 1 else None,
+                signal_sb=signal_sb if signal_if == 1 else None,
+                # for file loading (optional)
+                vdif_join=join,
             ),
             open_vdifs(
                 vdif_in3,
                 vdif_in4,
+                # for measurement (required)
                 chassis=chassis,
-                freq_range=freq_range_if2,
-                integ_time=integ_time,
                 interface=2,
-                join=join,
+                freq_range=freq_range_if2,
+                # for measurement (optional)
+                integ_time=integ_time,
+                signal_chan=signal_chan if signal_if == 2 else None,
+                signal_sb=signal_sb if signal_if == 2 else None,
+                # for file loading (optional)
+                vdif_join=join,
             ),
             join=join,
         )
 
-        ds_if1.to_zarr(zarr_if1, mode="w")
-        ds_if2.to_zarr(zarr_if2, mode="w")
-        return Path(zarr_if1).resolve(), Path(zarr_if2).resolve()
+        if integrate:
+            ds_if1 = ds_if1.mean("time")
+            ds_if2 = ds_if2.mean("time")
+
+        if zarr_if1.exists() and append:
+            ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")
+        else:
+            ds_if1.to_zarr(zarr_if1, mode="w")
+
+        if zarr_if2.exists() and append:
+            ds_if2.to_zarr(zarr_if2, mode="a", append_dim="time")
+        else:
+            ds_if2.to_zarr(zarr_if2, mode="w")
+
+        return zarr_if1.resolve(), zarr_if2.resolve()
 
 
 def dump(
     vdif: Union[Path, str],
-    dest_addr: str,
-    dest_port: int,
     /,
     *,
+    # for connection (required)
+    dest_addr: str,
+    dest_port: int,
+    # for connection (optional)
     group: str = GROUP,
+    # for file saving (optional)
     cancel: Optional[Event] = None,
     timeout: Optional[float] = None,
     progress: bool = False,
@@ -226,8 +297,8 @@ def dump(
 @contextmanager
 def set_workdir(workdir: Optional[StrPath] = None, /) -> Iterator[Path]:
     """Set the working directory for output VDIF files."""
-    if workdir is None:
+    if workdir is not None:
+        yield Path(workdir).expanduser()
+    else:
         with TemporaryDirectory() as workdir:
             yield Path(workdir)
-    else:
-        yield Path(workdir).expanduser()
