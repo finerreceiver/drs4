@@ -105,7 +105,7 @@ def auto(
         zarr_if2 = f"drs4-{obsid}-chassis{chassis}-if2.zarr.zip"
 
     if append and overwrite:
-        raise ValueError("")
+        raise ValueError("Append and overwrite cannot be enabled at once.")
 
     if chassis not in get_args(Chassis):
         raise ValueError("Chassis number must be 1|2.")
@@ -211,8 +211,8 @@ def auto(
         )
 
         if integrate:
-            ds_if1 = ds_if1.mean("time")
-            ds_if2 = ds_if2.mean("time")
+            ds_if1 = ds_if1.mean("time", keep_attrs=True, keepdims=True)
+            ds_if2 = ds_if2.mean("time", keep_attrs=True, keepdims=True)
 
         if zarr_if1.exists() and append:
             ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")
