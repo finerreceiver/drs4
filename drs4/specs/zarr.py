@@ -26,9 +26,10 @@ VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
 # constants
+CHAN_TOTAL = 512  # ch
 FREQ_INTERVAL = 0.02  # GHz
-FREQ_INNER = FREQ_INTERVAL * np.arange(0, 512)  # GHz
-FREQ_OUTER = FREQ_INTERVAL * np.arange(512, 1024)[::-1]  # GHz
+FREQ_INNER = FREQ_INTERVAL * np.arange(CHAN_TOTAL * 0, CHAN_TOTAL * 1)  # GHz
+FREQ_OUTER = FREQ_INTERVAL * np.arange(CHAN_TOTAL * 1, CHAN_TOTAL * 2)  # GHz
 
 
 # data classes
@@ -193,7 +194,7 @@ def open_vdifs(
         time=da_usb.time.data,
         chan=da_usb.chan.data,
         # coords
-        freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER,
+        freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
         signal_chan=np.full(
             da_usb.shape[0],
             signal_chan if signal_chan is not None else -1,

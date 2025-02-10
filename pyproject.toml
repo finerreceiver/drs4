@@ -21,6 +21,7 @@ pytest = "^8.0"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+reportIncompatibleMethodOverride = "warning"
 reportUnknownMemberType = "warning"
 
 [build-system]
