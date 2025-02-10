@@ -49,9 +49,16 @@ StrPath = Union[PathLike[str], str]
 
 
 # constants
+ENV_DEST_ADDR = "DRS4_CHASSIS{0}_DEST_ADDR"
+ENV_DEST_PORT1 = "DRS4_CHASSIS{0}_DEST_PORT1"
+ENV_DEST_PORT2 = "DRS4_CHASSIS{0}_DEST_PORT2"
+ENV_DEST_PORT3 = "DRS4_CHASSIS{0}_DEST_PORT3"
+ENV_DEST_PORT4 = "DRS4_CHASSIS{0}_DEST_PORT4"
 GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
 OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
+ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
+VDIF_FORMAT = "drs4-{0}-chassis{1}-if{2}.vdif"
 
 
 def auto(
@@ -87,25 +94,25 @@ def auto(
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
 
     if dest_addr is None:
-        dest_addr = getenv(f"DRS4_CHASSIS{chassis}_DEST_ADDR", "")
+        dest_addr = getenv(ENV_DEST_ADDR.format(chassis), "")
 
     if dest_port1 is None:
-        dest_port1 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT1", ""))
+        dest_port1 = int(getenv(ENV_DEST_PORT1.format(chassis), ""))
 
     if dest_port2 is None:
-        dest_port2 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT2", ""))
+        dest_port2 = int(getenv(ENV_DEST_PORT2.format(chassis), ""))
 
     if dest_port3 is None:
-        dest_port3 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT3", ""))
+        dest_port3 = int(getenv(ENV_DEST_PORT3.format(chassis), ""))
 
     if dest_port4 is None:
-        dest_port4 = int(getenv(f"DRS4_CHASSIS{chassis}_DEST_PORT4", ""))
+        dest_port4 = int(getenv(ENV_DEST_PORT4.format(chassis), ""))
 
     if zarr_if1 is None:
-        zarr_if1 = f"drs4-{obsid}-chassis{chassis}-if1.zarr.zip"
+        zarr_if1 = ZARR_FORMAT.format(obsid, chassis, 1)
 
     if zarr_if2 is None:
-        zarr_if2 = f"drs4-{obsid}-chassis{chassis}-if2.zarr.zip"
+        zarr_if2 = ZARR_FORMAT.format(obsid, chassis, 2)
 
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
@@ -137,7 +144,7 @@ def auto(
         cancel = manager.Event()
         executor.submit(
             dump,
-            vdif_in1 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in1.vdif",
+            vdif_in1 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 1),
             dest_addr=dest_addr,
             dest_port=dest_port1,
             cancel=cancel,
@@ -146,7 +153,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in2 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in2.vdif",
+            vdif_in2 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 2),
             dest_addr=dest_addr,
             dest_port=dest_port2,
             cancel=cancel,
@@ -155,7 +162,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in3 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in3.vdif",
+            vdif_in3 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 3),
             dest_addr=dest_addr,
             dest_port=dest_port3,
             cancel=cancel,
@@ -164,7 +171,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in4 := Path(workdir) / f"drs4-{obsid}-chassis{chassis}-in4.vdif",
+            vdif_in4 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 4),
             dest_addr=dest_addr,
             dest_port=dest_port4,
             cancel=cancel,
