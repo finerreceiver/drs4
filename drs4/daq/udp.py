@@ -30,8 +30,8 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from tqdm import tqdm
-from .specs.vdif import VDIF_FRAME_BYTES
-from .specs.zarr import (
+from ..specs.vdif import VDIF_FRAME_BYTES
+from ..specs.zarr import (
     Channel,
     Chassis,
     FreqRange,
