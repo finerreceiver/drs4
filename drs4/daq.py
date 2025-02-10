@@ -2,7 +2,7 @@ __all__ = ["auto"]
 
 
 # standard library
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -22,11 +22,13 @@ from socket import (
 from tempfile import TemporaryDirectory
 from threading import Event
 from time import sleep
-from typing import Literal as L, Optional, Union, get_args
+from typing import Any, Literal as L, Optional, Union, get_args
 
 
 # dependencies
+import numpy as np
 import xarray as xr
+from numpy.typing import NDArray
 from tqdm import tqdm
 from .specs.vdif import VDIF_FRAME_BYTES
 from .specs.zarr import (
@@ -41,6 +43,7 @@ from .specs.zarr import (
 
 
 # type hints
+Axis = Optional[Union[Sequence[int], int]]
 Join = L["outer", "inner", "left", "right", "exact", "override"]
 StrPath = Union[PathLike[str], str]
 
@@ -211,8 +214,10 @@ def auto(
         )
 
         if integrate:
-            ds_if1 = ds_if1.mean("time", keep_attrs=True, keepdims=True)
-            ds_if2 = ds_if2.mean("time", keep_attrs=True, keepdims=True)
+            dim = {"time": ds_if1.sizes["time"]}
+            coord_func = {"signal_chan": unique, "signal_sb": unique}
+            ds_if1 = ds_if1.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
+            ds_if2 = ds_if2.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
 
         if zarr_if1.exists() and append:
             ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")
@@ -302,3 +307,23 @@ def set_workdir(workdir: Optional[StrPath] = None, /) -> Iterator[Path]:
     else:
         with TemporaryDirectory() as workdir:
             yield Path(workdir)
+
+
+def unique(array: NDArray[Any], /, axis: Axis = None) -> NDArray[Any]:
+    """Return unique values along given axis (axes)."""
+    if axis is None:
+        axis = list(range(array.ndim))
+
+    axes = np.atleast_1d(axis)
+    shape = np.array(array.shape)
+    newshape = np.prod(shape[axes]), *np.delete(shape, axes)
+
+    for ax in axes:
+        array = np.moveaxis(array, ax, 0)
+
+    result = np.unique(array.reshape(newshape), axis=0)
+
+    if result.shape[0] != 1:
+        raise ValueError("Array values are not unique.")
+
+    return result[0]
