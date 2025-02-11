@@ -9,7 +9,7 @@ from typing import Optional, Union, overload
 
 
 # dependencies
-from drs4.specs.zarr import Chassis
+from ..specs.zarr import Chassis
 
 
 # type hints
@@ -30,6 +30,7 @@ def run(
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
     timeout: Optional[float] = None,
+    workdir: StrPath = "~/DRS4/cmd",
 ) -> StrCP: ...
 
 
@@ -40,6 +41,7 @@ def run(
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
     timeout: Optional[float] = None,
+    workdir: StrPath = "~/DRS4/cmd",
 ) -> tuple[StrCP, StrCP]: ...
 
 
