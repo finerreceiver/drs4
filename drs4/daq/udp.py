@@ -59,7 +59,7 @@ GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
 OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
 ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
-VDIF_FORMAT = "drs4-{0}-chassis{1}-if{2}.vdif"
+VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 
 
 def auto(
@@ -155,7 +155,7 @@ def auto(
         cancel = manager.Event()
         executor.submit(
             dump,
-            vdif_in1 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 1),
+            vdif_in1 := workdir / VDIF_FORMAT.format(obsid, chassis, 1),
             dest_addr=dest_addr,
             dest_port=dest_port1,
             cancel=cancel,
@@ -164,7 +164,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in2 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 2),
+            vdif_in2 := workdir / VDIF_FORMAT.format(obsid, chassis, 2),
             dest_addr=dest_addr,
             dest_port=dest_port2,
             cancel=cancel,
@@ -173,7 +173,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in3 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 3),
+            vdif_in3 := workdir / VDIF_FORMAT.format(obsid, chassis, 3),
             dest_addr=dest_addr,
             dest_port=dest_port3,
             cancel=cancel,
@@ -182,7 +182,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in4 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 4),
+            vdif_in4 := workdir / VDIF_FORMAT.format(obsid, chassis, 4),
             dest_addr=dest_addr,
             dest_port=dest_port4,
             cancel=cancel,
