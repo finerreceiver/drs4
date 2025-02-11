@@ -1,14 +1,17 @@
-__all__ = ["Zarr", "open_vdifs"]
+__all__ = ["Zarr", "open_csvs", "open_vdifs"]
 
 
 # standard library
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from io import StringIO
 from os import PathLike
 from typing import Literal as L, Optional, Union, get_args
 
 
 # dependencies
 import numpy as np
+import pandas as pd
 import xarray as xr
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
 from .vdif import open_vdif
@@ -22,6 +25,7 @@ Interface = L[1, 2]
 IntegTime = L[100, 200, 500, 1000]  # ms
 SideBand = L["USB", "LSB"]
 StrPath = Union[PathLike[str], str]
+TimeLike = Union[datetime, str]
 VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
@@ -128,6 +132,55 @@ class Zarr(AsDataset):
 
     spec_version: Attr[int] = field(default=0, init=False)
     """Version of the data specification."""
+
+
+def open_csvs(
+    csv_autos: Union[StrPath, StringIO],
+    csv_cross: Union[StrPath, StringIO],
+    /,
+    *,
+    # for measurement (required)
+    chassis: Chassis,
+    interface: Interface,
+    freq_range: FreqRange,
+    integ_time: IntegTime,
+    # for measurement (optional)
+    signal_chan: Optional[Channel] = None,
+    signal_sb: Optional[SideBand] = None,
+) -> xr.Dataset:
+    """Open CSV files of auto/cross correlations as a Dataset."""
+    if chassis not in get_args(Chassis):
+        raise ValueError("Chassis number must be 1|2.")
+
+    if interface not in get_args(Interface):
+        raise ValueError("Interface number must be 1|2.")
+
+    if freq_range not in get_args(FreqRange):
+        raise ValueError("Spectral integration time must be inner|outer.")
+
+    if integ_time not in get_args(IntegTime):
+        raise ValueError("Spectral integration time must be 100|200|500|1000.")
+
+    df_autos = pd.read_csv(csv_autos)
+    df_cross = pd.read_csv(csv_cross)
+
+    return Zarr.new(
+        # dims
+        time=datetime.now(timezone.utc),
+        chan=np.arange(len(df_autos)),
+        # coords
+        signal_chan=[signal_chan if signal_chan is not None else -1],
+        signal_sb=[signal_sb if signal_sb is not None else "NA"],
+        freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
+        # vars
+        auto_usb=[df_autos["out0"]],
+        auto_lsb=[df_autos["out0"]],
+        cross_2sb=[df_cross["real"] + 1j * df_cross["imag"]],
+        # attrs
+        chassis=chassis,
+        interface=interface,
+        integ_time=integ_time,
+    )
 
 
 def open_vdifs(
