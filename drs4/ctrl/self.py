@@ -25,9 +25,7 @@ LOGGER = getLogger(__name__)
 
 @overload
 def run(
-    # for connection (required)
     *commands: str,
-    # for connection (optional)
     chassis: Chassis,
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
@@ -37,9 +35,7 @@ def run(
 
 @overload
 def run(
-    # for connection (required)
     *commands: str,
-    # for connection (optional)
     chassis: None = None,
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
