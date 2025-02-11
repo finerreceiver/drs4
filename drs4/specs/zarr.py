@@ -104,11 +104,11 @@ class Zarr(AsDataset):
     freq: Coordof[Freq]
     """Intermediate frequency in GHz."""
 
-    signal_chan: Coordof[SignalChan]
-    """Signal channel number (0-511|-1)."""
-
     signal_sb: Coordof[SignalSB]
     """Signal sideband (USB|LSB|NA)."""
+
+    signal_chan: Coordof[SignalChan]
+    """Signal channel number (0-511|-1)."""
 
     # vars
     auto_usb: Dataof[AutoUSB]
@@ -145,8 +145,8 @@ def open_csvs(
     freq_range: FreqRange,
     integ_time: IntegTime,
     # for measurement (optional)
-    signal_chan: Optional[Channel] = None,
     signal_sb: Optional[SideBand] = None,
+    signal_chan: Optional[Channel] = None,
 ) -> xr.Dataset:
     """Open CSV files of auto/cross correlations as a Dataset."""
     if chassis not in get_args(Chassis):
@@ -169,8 +169,8 @@ def open_csvs(
         time=datetime.now(timezone.utc),
         chan=np.arange(len(df_autos)),
         # coords
-        signal_chan=[signal_chan if signal_chan is not None else -1],
         signal_sb=[signal_sb if signal_sb is not None else "NA"],
+        signal_chan=[signal_chan if signal_chan is not None else -1],
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
         # vars
         auto_usb=[df_autos["out0"]],
@@ -194,8 +194,8 @@ def open_vdifs(
     freq_range: FreqRange,
     # for measurement (optional)
     integ_time: Optional[IntegTime] = None,
-    signal_chan: Optional[Channel] = None,
     signal_sb: Optional[SideBand] = None,
+    signal_chan: Optional[Channel] = None,
     # for file loading (optional)
     vdif_join: VDIFJoin = "inner",
 ) -> xr.Dataset:
@@ -209,10 +209,10 @@ def open_vdifs(
         freq_range: Intermediate frequency range (inner|outer).
         integ_time: Spectral integration time in ms (100|200|500|1000).
             If not specified, it will be inferred from the VDIF files.
-        signal_chan: Signal channel number (0-511).
-            If not specified, -1 (missing indicator) will be assigned.
         signal_sb: Signal sideband (USB|LSB).
             If not specified, NA (missing indicator) will be assigned.
+        signal_chan: Signal channel number (0-511).
+            If not specified, -1 (missing indicator) will be assigned.
         vdif_join: Method for joining the VDIF files.
 
     Returns:
@@ -248,13 +248,13 @@ def open_vdifs(
         chan=da_usb.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
-        signal_chan=np.full(
-            da_usb.shape[0],
-            signal_chan if signal_chan is not None else -1,
-        ),
         signal_sb=np.full(
             da_usb.shape[0],
             signal_sb if signal_sb is not None else "NA",
+        ),
+        signal_chan=np.full(
+            da_usb.shape[0],
+            signal_chan if signal_chan is not None else -1,
         ),
         # vars
         auto_usb=da_usb.data,

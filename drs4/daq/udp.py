@@ -209,8 +209,8 @@ def auto(
                 freq_range=freq_range_if1,
                 # for measurement (optional)
                 integ_time=integ_time,
-                signal_chan=signal_chan if signal_if == 1 else None,
                 signal_sb=signal_sb if signal_if == 1 else None,
+                signal_chan=signal_chan if signal_if == 1 else None,
                 # for file loading (optional)
                 vdif_join=join,
             ),
@@ -223,8 +223,8 @@ def auto(
                 freq_range=freq_range_if2,
                 # for measurement (optional)
                 integ_time=integ_time,
-                signal_chan=signal_chan if signal_if == 2 else None,
                 signal_sb=signal_sb if signal_if == 2 else None,
+                signal_chan=signal_chan if signal_if == 2 else None,
                 # for file loading (optional)
                 vdif_join=join,
             ),
