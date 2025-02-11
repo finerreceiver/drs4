@@ -30,6 +30,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from tqdm import tqdm
+from ..ctrl.self import run
 from ..specs.vdif import VDIF_FRAME_BYTES
 from ..specs.zarr import (
     Channel,
@@ -134,6 +135,16 @@ def auto(
 
     if (zarr_if2 := Path(zarr_if2)).exists() and not append and not overwrite:
         raise FileExistsError(zarr_if2)
+
+    run(
+        # for interface 1
+        f"./set_intg_time.py --In 1 --It {integ_time // 100}",
+        f"./get_intg_time.py --In 1",
+        # for interface 2
+        f"./set_intg_time.py --In 3 --It {integ_time // 100}",
+        f"./get_intg_time.py --In 3",
+        chassis=chassis,
+    )
 
     with (
         Manager() as manager,
