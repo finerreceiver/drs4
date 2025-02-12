@@ -193,9 +193,15 @@ def open_csvs(
         time=ds_autos.time.data,
         chan=ds_autos.chan.data,
         # coords
-        signal_sb=[signal_sb if signal_sb is not None else "NA"],
-        signal_chan=[signal_chan if signal_chan is not None else -1],
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
+        signal_sb=np.full(
+            ds_autos.sizes["time"],
+            signal_sb if signal_sb is not None else "NA",
+        ),
+        signal_chan=np.full(
+            ds_autos.sizes["time"],
+            signal_chan if signal_chan is not None else -1,
+        ),
         # vars
         auto_usb=ds_autos.auto_usb.data,
         auto_lsb=ds_autos.auto_lsb.data,
@@ -273,11 +279,11 @@ def open_vdifs(
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
         signal_sb=np.full(
-            da_usb.shape[0],
+            da_usb.sizes["time"],
             signal_sb if signal_sb is not None else "NA",
         ),
         signal_chan=np.full(
-            da_usb.shape[0],
+            da_usb.sizes["time"],
             signal_chan if signal_chan is not None else -1,
         ),
         # vars
