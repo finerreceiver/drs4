@@ -1,4 +1,4 @@
-__all__ = ["Axis", "StrPath", "XarrayJoin", "set_workdir", "unique"]
+__all__ = ["StrPath", "XarrayJoin", "set_workdir", "unique"]
 
 
 # standard library
