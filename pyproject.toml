@@ -6,16 +6,16 @@ authors = ["Akio Taniguchi <taniguchi@a.phys.nagoya-u.ac.jp>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <3.13"
+python = ">=3.10, <3.13"
 dateparser = "^1.2"
 fire = ">=0.5, <1.0"
 tqdm = "^4.66"
-xarray = "^2024.0"
+xarray = "^2024.0 | ^2025.0"
 xarray-dataclasses = "^1.8"
 zarr = "^2.16"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.0"
+black = "^24.0 | ^25.0"
 ipython = "^8.0"
 pytest = "^8.0"
 
