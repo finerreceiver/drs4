@@ -9,16 +9,22 @@ from typing import Optional
 
 # constants
 LOGGER = getLogger(__name__)
-ENV_LO_FREQ = "DRS4_LO_FREQ"
-ENV_LO_MULT = "DRS4_LO_MULT"
-ENV_SG_AMPL = "DRS4_CW_SG_AMPL"
-ENV_SG_HOST = "DRS4_CW_SG_HOST"
-ENV_SG_PORT = "DRS4_CW_SG_PORT"
 
 
 # dependencies
 from .scpi import send_commands
-from ..specs.common import CHAN_TOTAL, FREQ_INTERVAL, Channel, FreqRange, SideBand
+from ..specs.common import (
+    CHAN_TOTAL,
+    FREQ_INTERVAL,
+    ENV_LO_FREQ,
+    ENV_LO_MULT,
+    ENV_SG_ADDR,
+    ENV_SG_AMPL,
+    ENV_SG_PORT,
+    Channel,
+    FreqRange,
+    SideBand,
+)
 
 
 def on(
@@ -65,7 +71,7 @@ def on(
         sg_ampl = float(getenv(ENV_SG_AMPL, 0.0))
 
     if sg_host is None:
-        sg_host = str(getenv(ENV_SG_HOST, ""))
+        sg_host = str(getenv(ENV_SG_ADDR, ""))
 
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, 0))
@@ -112,7 +118,7 @@ def off(
 
     """
     if sg_host is None:
-        sg_host = getenv(ENV_SG_HOST, "")
+        sg_host = getenv(ENV_SG_ADDR, "")
 
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, ""))
@@ -143,7 +149,7 @@ def status(
 
     """
     if sg_host is None:
-        sg_host = getenv(ENV_SG_HOST, "")
+        sg_host = getenv(ENV_SG_ADDR, "")
 
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, ""))

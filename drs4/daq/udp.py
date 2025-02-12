@@ -27,7 +27,13 @@ import xarray as xr
 from tqdm import tqdm
 from ..ctrl.self import run
 from ..specs.common import (
+    ENV_DEST_ADDR,
+    ENV_DEST_PORT1,
+    ENV_DEST_PORT2,
+    ENV_DEST_PORT3,
+    ENV_DEST_PORT4,
     OBSID_FORMAT,
+    VDIF_FORMAT,
     ZARR_FORMAT,
     Channel,
     Chassis,
@@ -42,14 +48,8 @@ from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 
 # constants
-ENV_DEST_ADDR = "DRS4_CHASSIS{0}_DEST_ADDR"
-ENV_DEST_PORT1 = "DRS4_CHASSIS{0}_DEST_PORT1"
-ENV_DEST_PORT2 = "DRS4_CHASSIS{0}_DEST_PORT2"
-ENV_DEST_PORT3 = "DRS4_CHASSIS{0}_DEST_PORT3"
-ENV_DEST_PORT4 = "DRS4_CHASSIS{0}_DEST_PORT4"
 GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
-VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 
 
 def auto(

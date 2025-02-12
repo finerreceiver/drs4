@@ -12,9 +12,13 @@ from typing import Optional, get_args
 # dependencies
 import xarray as xr
 from tqdm import tqdm
-from ..ctrl.self import ENV_CTRL_ADDR, ENV_CTRL_USER, run
+from ..ctrl.self import run
 from ..specs.common import (
     CHAN_TOTAL,
+    CSV_AUTOS_FORMAT,
+    CSV_CROSS_FORMAT,
+    ENV_CTRL_ADDR,
+    ENV_CTRL_USER,
     OBSID_FORMAT,
     ZARR_FORMAT,
     Channel,
@@ -31,9 +35,7 @@ from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 # constants
 CSV_AUTOS = "~/DRS4/mrdsppy/output/new_pow.csv"
-CSV_AUTOS_FORMAT = "drs4-{0}-chassis{1}-autos-if{2}.csv"
 CSV_CROSS = "~/DRS4/mrdsppy/output/new_phase.csv"
-CSV_CROSS_FORMAT = "drs4-{0}-chassis{1}-cross-if{2}.csv"
 CSV_ROW_TOTAL = CHAN_TOTAL + 1  # 1 means header
 LOGGER = getLogger(__name__)
 

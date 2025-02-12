@@ -9,6 +9,7 @@ from typing import Optional, Union, overload
 
 
 # dependencies
+from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER
 from ..specs.zarr import Chassis
 from ..utils import StrPath
 
@@ -18,8 +19,6 @@ StrCP = CompletedProcess[str]
 
 
 # constants
-ENV_CTRL_ADDR = "DRS4_CHASSIS{0}_CTRL_ADDR"
-ENV_CTRL_USER = "DRS4_CHASSIS{0}_CTRL_USER"
 LOGGER = getLogger(__name__)
 
 
