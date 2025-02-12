@@ -18,7 +18,7 @@ ENV_SG_PORT = "DRS4_CW_SG_PORT"
 
 # dependencies
 from .scpi import send_commands
-from ..specs.zarr import CHAN_TOTAL, FREQ_INTERVAL, Channel, FreqRange, SideBand
+from ..specs.common import CHAN_TOTAL, FREQ_INTERVAL, Channel, FreqRange, SideBand
 
 
 def on(

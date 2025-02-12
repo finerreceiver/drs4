@@ -26,16 +26,18 @@ from typing import Optional, Union, get_args
 import xarray as xr
 from tqdm import tqdm
 from ..ctrl.self import run
-from ..specs.vdif import VDIF_FRAME_BYTES
-from ..specs.zarr import (
+from ..specs.common import (
+    OBSID_FORMAT,
+    ZARR_FORMAT,
     Channel,
     Chassis,
     FreqRange,
     Interface,
     IntegTime,
     SideBand,
-    open_vdifs,
 )
+from ..specs.vdif import VDIF_FRAME_BYTES
+from ..specs.zarr import open_vdifs
 from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 
@@ -47,8 +49,6 @@ ENV_DEST_PORT3 = "DRS4_CHASSIS{0}_DEST_PORT3"
 ENV_DEST_PORT4 = "DRS4_CHASSIS{0}_DEST_PORT4"
 GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
-OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
-ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
 VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 
 

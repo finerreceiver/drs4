@@ -3,14 +3,14 @@ __all__ = ["CSVAutos", "CSVCross", "open_csv_autos", "open_csv_cross"]
 
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L
 
 
 # dependencies
 import numpy as np
 import pandas as pd
 import xarray as xr
-from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
+from xarray_dataclasses import AsDataset, Attr, Coordof, Dataof
+from .common import Time, Chan, AutoUSB, AutoLSB, Cross2SB
 from ..utils import StrPath
 
 
@@ -26,39 +26,6 @@ TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"  # UTC
 
 
 # data classes
-@dataclass
-class Time:
-    data: Data[L["time"], L["M8[ns]"]]
-    long_name: Attr[str] = "Measured time in UTC"
-
-
-@dataclass
-class Chan:
-    data: Data[L["chan"], np.int64]
-    long_name: Attr[str] = "Channel number"
-
-
-@dataclass
-class AutoUSB:
-    data: Data[tuple[L["time"], L["chan"]], np.float64]
-    long_name: Attr[str] = "Auto-correlation spectra of USB"
-    units: Attr[str] = "Arbitrary unit"
-
-
-@dataclass
-class AutoLSB:
-    data: Data[tuple[L["time"], L["chan"]], np.float64]
-    long_name: Attr[str] = "Auto-correlation spectra of LSB"
-    units: Attr[str] = "Arbitrary unit"
-
-
-@dataclass
-class Cross2SB:
-    data: Data[tuple[L["time"], L["chan"]], np.complex128]
-    long_name: Attr[str] = "Cross-correlation spectra of 2SB"
-    units: Attr[str] = "Arbitrary unit"
-
-
 @dataclass
 class CSVAutos(AsDataset):
     """Data specification of DRS4 CSV (auto-correlations)."""

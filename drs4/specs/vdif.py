@@ -11,11 +11,8 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
+from .common import Chan, IntegTime, Time
 from ..utils import StrPath, XarrayJoin
-
-
-# type hints
-IntegTime = L[100, 200, 500, 1000]
 
 
 # constants
@@ -29,18 +26,6 @@ VDIF_FRAME_BYTES = VDIF_HEADER_BYTES + VDIF_DATA_BYTES
 
 
 # data classes
-@dataclass
-class Time:
-    data: Data[L["time"], L["M8[ns]"]]
-    long_name: Attr[str] = "Measured time in UTC"
-
-
-@dataclass
-class Chan:
-    data: Data[L["chan"], np.int64]
-    long_name: Attr[str] = "Channel number"
-
-
 @dataclass
 class Auto:
     data: Data[tuple[L["time"], L["chan"]], np.float64]

@@ -13,17 +13,19 @@ from typing import Optional, get_args
 import xarray as xr
 from tqdm import tqdm
 from ..ctrl.self import ENV_CTRL_ADDR, ENV_CTRL_USER, run
-from ..specs.csv import TIME_FORMAT
-from ..specs.zarr import (
+from ..specs.common import (
     CHAN_TOTAL,
+    OBSID_FORMAT,
+    ZARR_FORMAT,
     Channel,
     Chassis,
     FreqRange,
     IntegTime,
     Interface,
     SideBand,
-    open_csvs,
 )
+from ..specs.csv import TIME_FORMAT
+from ..specs.zarr import open_csvs
 from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 
@@ -32,10 +34,8 @@ CSV_AUTOS = "~/DRS4/mrdsppy/output/new_pow.csv"
 CSV_AUTOS_FORMAT = "drs4-{0}-chassis{1}-autos-if{2}.csv"
 CSV_CROSS = "~/DRS4/mrdsppy/output/new_phase.csv"
 CSV_CROSS_FORMAT = "drs4-{0}-chassis{1}-cross-if{2}.csv"
-CSV_ROW_TOTAL = CHAN_TOTAL + 1
+CSV_ROW_TOTAL = CHAN_TOTAL + 1  # 1 means header
 LOGGER = getLogger(__name__)
-OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
-ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
 
 
 def cross(
