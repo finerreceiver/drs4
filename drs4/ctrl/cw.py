@@ -55,7 +55,7 @@ def on(
         sg_ampl: Amplitude of the CW signal in dBm.
             If not specified, environment variable ``DRS4_CW_SG_AMPL`` will be used.
         sg_host: Host name or IP address of the SG (e.g. Keysight 8257D).
-            If not specified, environment variable ``DRS4_CW_SG_HOST`` will be used.
+            If not specified, environment variable ``DRS4_CW_SG_ADDR`` will be used.
         sg_port: Port number of the SG (e.g. Keysight 8257D).
             If not specified, environment variable ``DRS4_CW_SG_PORT`` will be used.
         timeout: Timeout of the connection process in seconds.
@@ -111,7 +111,7 @@ def off(
 
     Args:
         sg_host: Host name or IP address of the SG (e.g. Keysight 8257D).
-            If not specified, environment variable ``DRS4_CW_SG_HOST`` will be used.
+            If not specified, environment variable ``DRS4_CW_SG_ADDR`` will be used.
         sg_port: Port number of the SG (e.g. Keysight 8257D).
             If not specified, environment variable ``DRS4_CW_SG_PORT`` will be used.
         timeout: Timeout of the connection process in seconds.
@@ -142,7 +142,7 @@ def status(
 
     Args:
         sg_host: Host name or IP address of the SG (e.g. Keysight 8257D).
-            If not specified, environment variable ``DRS4_CW_SG_HOST`` will be used.
+            If not specified, environment variable ``DRS4_CW_SG_ADDR`` will be used.
         sg_port: Port number of the SG (e.g. Keysight 8257D).
             If not specified, environment variable ``DRS4_CW_SG_PORT`` will be used.
         timeout: Timeout of the connection process in seconds.
