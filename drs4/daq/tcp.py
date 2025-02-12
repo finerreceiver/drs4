@@ -165,6 +165,11 @@ def cross(
 
             bar.update(1)
 
+        f_autos_if1.flush()
+        f_cross_if1.flush()
+        f_autos_if2.flush()
+        f_cross_if2.flush()
+
         ds_if1, ds_if2 = xr.align(
             open_csvs(
                 csv_autos_if1,
