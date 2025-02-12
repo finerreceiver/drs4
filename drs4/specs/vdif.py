@@ -3,8 +3,7 @@ __all__ = ["VDIF", "open_vdif"]
 
 # standard library
 from dataclasses import dataclass, field
-from os import PathLike
-from typing import Literal as L, Optional, Union, get_args
+from typing import Literal as L, Optional, get_args
 
 
 # dependencies
@@ -12,12 +11,8 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
-
-
-# type hints
-IntegTime = L[100, 200, 500, 1000]
-StrPath = Union[PathLike[str], str]
-VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
+from .common import Chan, IntegTime, Time
+from ..utils import StrPath, XarrayJoin
 
 
 # constants
@@ -31,18 +26,6 @@ VDIF_FRAME_BYTES = VDIF_HEADER_BYTES + VDIF_DATA_BYTES
 
 
 # data classes
-@dataclass
-class Time:
-    data: Data[L["time"], L["M8[ns]"]]
-    long_name: Attr[str] = "Measured time in UTC"
-
-
-@dataclass
-class Chan:
-    data: Data[L["chan"], np.int64]
-    long_name: Attr[str] = "Channel number"
-
-
 @dataclass
 class Auto:
     data: Data[tuple[L["time"], L["chan"]], np.float64]
@@ -93,7 +76,7 @@ def open_vdif(
     # for measurement (optional)
     integ_time: Optional[IntegTime] = None,
     # for file loading (optional)
-    vdif_join: VDIFJoin = "inner",
+    join: XarrayJoin = "inner",
 ) -> xr.DataArray:
     """Open a VDIF file as a DataArray.
 
@@ -101,7 +84,7 @@ def open_vdif(
         vdif: Path of input VDIF file.
         integ_time: Spectral integration time in ms (100|200|500|1000).
             If not specified, it will be inferred from the VDIF file.
-        vdif_join: Method of joining the first- and second-half spectra.
+        join: Method of joining the first- and second-half spectra.
 
     Returns:
         DataArray of the input VDIF file.
@@ -162,7 +145,7 @@ def open_vdif(
             ),
         ),
         dim="chan",
-        join=vdif_join,
+        join=join,
     )
 
 

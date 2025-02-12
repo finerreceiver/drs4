@@ -2,13 +2,11 @@ __all__ = ["auto"]
 
 
 # standard library
-from collections.abc import Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from logging import getLogger
 from multiprocessing import Manager
-from os import PathLike, getenv
+from os import getenv
 from pathlib import Path
 from socket import (
     IP_ADD_MEMBERSHIP,
@@ -19,46 +17,39 @@ from socket import (
     inet_aton,
     socket,
 )
-from tempfile import TemporaryDirectory
 from threading import Event
 from time import sleep
-from typing import Any, Literal as L, Optional, Union, get_args
+from typing import Optional, Union, get_args
 
 
 # dependencies
-import numpy as np
 import xarray as xr
-from numpy.typing import NDArray
 from tqdm import tqdm
-from .specs.vdif import VDIF_FRAME_BYTES
-from .specs.zarr import (
+from ..ctrl.self import run
+from ..specs.common import (
+    ENV_DEST_ADDR,
+    ENV_DEST_PORT1,
+    ENV_DEST_PORT2,
+    ENV_DEST_PORT3,
+    ENV_DEST_PORT4,
+    OBSID_FORMAT,
+    VDIF_FORMAT,
+    ZARR_FORMAT,
     Channel,
     Chassis,
     FreqRange,
     Interface,
     IntegTime,
     SideBand,
-    open_vdifs,
 )
-
-
-# type hints
-Axis = Optional[Union[Sequence[int], int]]
-Join = L["outer", "inner", "left", "right", "exact", "override"]
-StrPath = Union[PathLike[str], str]
+from ..specs.vdif import VDIF_FRAME_BYTES
+from ..specs.zarr import open_vdifs
+from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 
 # constants
-ENV_DEST_ADDR = "DRS4_CHASSIS{0}_DEST_ADDR"
-ENV_DEST_PORT1 = "DRS4_CHASSIS{0}_DEST_PORT1"
-ENV_DEST_PORT2 = "DRS4_CHASSIS{0}_DEST_PORT2"
-ENV_DEST_PORT3 = "DRS4_CHASSIS{0}_DEST_PORT3"
-ENV_DEST_PORT4 = "DRS4_CHASSIS{0}_DEST_PORT4"
 GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
-OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
-ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
-VDIF_FORMAT = "drs4-{0}-chassis{1}-if{2}.vdif"
 
 
 def auto(
@@ -76,7 +67,7 @@ def auto(
     # for file saving (optional)
     append: bool = False,
     integrate: bool = False,
-    join: Join = "inner",
+    join: XarrayJoin = "inner",
     overwrite: bool = False,
     progress: bool = False,
     workdir: Optional[StrPath] = None,
@@ -135,6 +126,17 @@ def auto(
     if (zarr_if2 := Path(zarr_if2)).exists() and not append and not overwrite:
         raise FileExistsError(zarr_if2)
 
+    run(
+        # for interface 1
+        f"./set_intg_time.py --In 1 --It {integ_time // 100}",
+        f"./get_intg_time.py --In 1",
+        # for interface 2
+        f"./set_intg_time.py --In 3 --It {integ_time // 100}",
+        f"./get_intg_time.py --In 3",
+        chassis=chassis,
+        timeout=timeout,
+    )
+
     with (
         Manager() as manager,
         ProcessPoolExecutor(4) as executor,
@@ -144,7 +146,7 @@ def auto(
         cancel = manager.Event()
         executor.submit(
             dump,
-            vdif_in1 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 1),
+            vdif_in1 := workdir / VDIF_FORMAT.format(obsid, chassis, 1),
             dest_addr=dest_addr,
             dest_port=dest_port1,
             cancel=cancel,
@@ -153,7 +155,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in2 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 2),
+            vdif_in2 := workdir / VDIF_FORMAT.format(obsid, chassis, 2),
             dest_addr=dest_addr,
             dest_port=dest_port2,
             cancel=cancel,
@@ -162,7 +164,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in3 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 3),
+            vdif_in3 := workdir / VDIF_FORMAT.format(obsid, chassis, 3),
             dest_addr=dest_addr,
             dest_port=dest_port3,
             cancel=cancel,
@@ -171,7 +173,7 @@ def auto(
         )
         executor.submit(
             dump,
-            vdif_in4 := Path(workdir) / VDIF_FORMAT.format(obsid, chassis, 4),
+            vdif_in4 := workdir / VDIF_FORMAT.format(obsid, chassis, 4),
             dest_addr=dest_addr,
             dest_port=dest_port4,
             cancel=cancel,
@@ -198,10 +200,10 @@ def auto(
                 freq_range=freq_range_if1,
                 # for measurement (optional)
                 integ_time=integ_time,
-                signal_chan=signal_chan if signal_if == 1 else None,
                 signal_sb=signal_sb if signal_if == 1 else None,
+                signal_chan=signal_chan if signal_if == 1 else None,
                 # for file loading (optional)
-                vdif_join=join,
+                join=join,
             ),
             open_vdifs(
                 vdif_in3,
@@ -212,10 +214,10 @@ def auto(
                 freq_range=freq_range_if2,
                 # for measurement (optional)
                 integ_time=integ_time,
-                signal_chan=signal_chan if signal_if == 2 else None,
                 signal_sb=signal_sb if signal_if == 2 else None,
+                signal_chan=signal_chan if signal_if == 2 else None,
                 # for file loading (optional)
-                vdif_join=join,
+                join=join,
             ),
             join=join,
         )
@@ -304,33 +306,3 @@ def dump(
 
         # finish dumping
         LOGGER.info(f"{prefix} Finish dumping data.")
-
-
-@contextmanager
-def set_workdir(workdir: Optional[StrPath] = None, /) -> Iterator[Path]:
-    """Set the working directory for output VDIF files."""
-    if workdir is not None:
-        yield Path(workdir).expanduser()
-    else:
-        with TemporaryDirectory() as workdir:
-            yield Path(workdir)
-
-
-def unique(array: NDArray[Any], /, axis: Axis = None) -> NDArray[Any]:
-    """Return unique values along given axis (axes)."""
-    if axis is None:
-        axis = list(range(array.ndim))
-
-    axes = np.atleast_1d(axis)
-    shape = np.array(array.shape)
-    newshape = np.prod(shape[axes]), *np.delete(shape, axes)
-
-    for ax in axes:
-        array = np.moveaxis(array, ax, 0)
-
-    result = np.unique(array.reshape(newshape), axis=0)
-
-    if result.shape[0] != 1:
-        raise ValueError("Array values are not unique.")
-
-    return result[0]
