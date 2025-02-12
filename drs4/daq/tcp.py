@@ -1,27 +1,14 @@
-__all__ = ["auto"]
+__all__ = ["cross"]
 
 
 # standard library
 from collections.abc import Iterator, Sequence
-from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from logging import getLogger
-from multiprocessing import Manager
 from os import PathLike, getenv
 from pathlib import Path
-from socket import (
-    IP_ADD_MEMBERSHIP,
-    IPPROTO_IP,
-    SO_REUSEADDR,
-    SOCK_DGRAM,
-    SOL_SOCKET,
-    inet_aton,
-    socket,
-)
 from tempfile import TemporaryDirectory
-from threading import Event
-from time import sleep
 from typing import Any, Literal as L, Optional, Union, get_args
 
 
@@ -30,16 +17,17 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from tqdm import tqdm
-from ..ctrl.self import run
-from ..specs.vdif import VDIF_FRAME_BYTES
+from ..ctrl.self import ENV_CTRL_ADDR, ENV_CTRL_USER, run
+from ..specs.csv import TIME_FORMAT
 from ..specs.zarr import (
+    CHAN_TOTAL,
     Channel,
     Chassis,
     FreqRange,
-    Interface,
     IntegTime,
+    Interface,
     SideBand,
-    open_vdifs,
+    open_csvs,
 )
 
 
@@ -50,19 +38,17 @@ StrPath = Union[PathLike[str], str]
 
 
 # constants
-ENV_DEST_ADDR = "DRS4_CHASSIS{0}_DEST_ADDR"
-ENV_DEST_PORT1 = "DRS4_CHASSIS{0}_DEST_PORT1"
-ENV_DEST_PORT2 = "DRS4_CHASSIS{0}_DEST_PORT2"
-ENV_DEST_PORT3 = "DRS4_CHASSIS{0}_DEST_PORT3"
-ENV_DEST_PORT4 = "DRS4_CHASSIS{0}_DEST_PORT4"
-GROUP = "239.0.0.1"
+CSV_AUTOS = "~/DRS4/mrdsppy/output/new_pow.csv"
+CSV_AUTOS_FORMAT = "drs4-{0}-chassis{1}-autos-if{2}.csv"
+CSV_CROSS = "~/DRS4/mrdsppy/output/new_phase.csv"
+CSV_CROSS_FORMAT = "drs4-{0}-chassis{1}-cross-if{2}.csv"
+CSV_ROW_TOTAL = CHAN_TOTAL + 1
 LOGGER = getLogger(__name__)
 OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
 ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
-VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 
 
-def auto(
+def cross(
     *,
     # for measurement (required)
     chassis: Chassis,
@@ -84,30 +70,18 @@ def auto(
     zarr_if1: Optional[StrPath] = None,
     zarr_if2: Optional[StrPath] = None,
     # for connection (optional)
-    dest_addr: Optional[str] = None,
-    dest_port1: Optional[int] = None,
-    dest_port2: Optional[int] = None,
-    dest_port3: Optional[int] = None,
-    dest_port4: Optional[int] = None,
+    ctrl_addr: Optional[str] = None,
+    ctrl_user: Optional[str] = None,
     timeout: Optional[float] = None,
 ) -> tuple[Path, Path]:
     """"""
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
 
-    if dest_addr is None:
-        dest_addr = getenv(ENV_DEST_ADDR.format(chassis), "")
+    if ctrl_addr is None:
+        ctrl_addr = getenv(ENV_CTRL_ADDR.format(chassis), "")
 
-    if dest_port1 is None:
-        dest_port1 = int(getenv(ENV_DEST_PORT1.format(chassis), ""))
-
-    if dest_port2 is None:
-        dest_port2 = int(getenv(ENV_DEST_PORT2.format(chassis), ""))
-
-    if dest_port3 is None:
-        dest_port3 = int(getenv(ENV_DEST_PORT3.format(chassis), ""))
-
-    if dest_port4 is None:
-        dest_port4 = int(getenv(ENV_DEST_PORT4.format(chassis), ""))
+    if ctrl_user is None:
+        ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
     if zarr_if1 is None:
         zarr_if1 = ZARR_FORMAT.format(obsid, chassis, 1)
@@ -136,7 +110,7 @@ def auto(
     if (zarr_if2 := Path(zarr_if2)).exists() and not append and not overwrite:
         raise FileExistsError(zarr_if2)
 
-    run(
+    result = run(
         # for interface 1
         f"./set_intg_time.py --In 1 --It {integ_time // 100}",
         f"./get_intg_time.py --In 1",
@@ -146,64 +120,65 @@ def auto(
         chassis=chassis,
         timeout=timeout,
     )
+    result.check_returncode()
 
     with (
-        Manager() as manager,
-        ProcessPoolExecutor(4) as executor,
         set_workdir(workdir) as workdir,
         tqdm(disable=not progress, total=int(duration), unit="s") as bar,
+        open(
+            csv_autos_if1 := workdir / CSV_AUTOS_FORMAT.format(obsid, chassis, 1),
+            mode="w",
+        ) as f_autos_if1,
+        open(
+            csv_cross_if1 := workdir / CSV_CROSS_FORMAT.format(obsid, chassis, 1),
+            mode="w",
+        ) as f_cross_if1,
+        open(
+            csv_autos_if2 := workdir / CSV_AUTOS_FORMAT.format(obsid, chassis, 2),
+            mode="w",
+        ) as f_autos_if2,
+        open(
+            csv_cross_if2 := workdir / CSV_CROSS_FORMAT.format(obsid, chassis, 2),
+            mode="w",
+        ) as f_cross_if2,
     ):
-        cancel = manager.Event()
-        executor.submit(
-            dump,
-            vdif_in1 := workdir / VDIF_FORMAT.format(obsid, chassis, 1),
-            dest_addr=dest_addr,
-            dest_port=dest_port1,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
-        executor.submit(
-            dump,
-            vdif_in2 := workdir / VDIF_FORMAT.format(obsid, chassis, 2),
-            dest_addr=dest_addr,
-            dest_port=dest_port2,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
-        executor.submit(
-            dump,
-            vdif_in3 := workdir / VDIF_FORMAT.format(obsid, chassis, 3),
-            dest_addr=dest_addr,
-            dest_port=dest_port3,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
-        executor.submit(
-            dump,
-            vdif_in4 := workdir / VDIF_FORMAT.format(obsid, chassis, 4),
-            dest_addr=dest_addr,
-            dest_port=dest_port4,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
+        for cycle in range(duration):
+            time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
+            result = run(
+                # for interface 1
+                f"./get_corr_rslt.py --In 1",
+                f"cat {CSV_AUTOS}",
+                f"cat {CSV_CROSS}",
+                # for interface 2
+                f"./get_corr_rslt.py --In 3",
+                f"cat {CSV_AUTOS}",
+                f"cat {CSV_CROSS}",
+                chassis=chassis,
+                timeout=timeout,
+            )
+            result.check_returncode()
+            rows = result.stdout.split()
 
-        try:
-            for _ in range(int(duration)):
-                sleep(1)
-                bar.update(1)
-        except KeyboardInterrupt:
-            LOGGER.warning("Data acquisition interrupted by user.")
-        finally:
-            cancel.set()
+            # write header
+            if cycle == 1:
+                f_autos_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0]}\n")
+                f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1]}\n")
+                f_autos_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2]}\n")
+                f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3]}\n")
+
+            # write data
+            for ch in range(CHAN_TOTAL):
+                f_autos_if1.write(f"{time},{rows[CSV_ROW_TOTAL * 0 + 1 + ch]}\n")
+                f_cross_if1.write(f"{time},{rows[CSV_ROW_TOTAL * 1 + 1 + ch]}\n")
+                f_autos_if2.write(f"{time},{rows[CSV_ROW_TOTAL * 2 + 1 + ch]}\n")
+                f_cross_if2.write(f"{time},{rows[CSV_ROW_TOTAL * 3 + 1 + ch]}\n")
+
+            bar.update(1)
 
         ds_if1, ds_if2 = xr.align(
-            open_vdifs(
-                vdif_in1,
-                vdif_in2,
+            open_csvs(
+                csv_autos_if1,
+                csv_cross_if1,
                 # for measurement (required)
                 chassis=chassis,
                 interface=1,
@@ -212,12 +187,10 @@ def auto(
                 integ_time=integ_time,
                 signal_sb=signal_sb if signal_if == 1 else None,
                 signal_chan=signal_chan if signal_if == 1 else None,
-                # for file loading (optional)
-                join=join,
             ),
-            open_vdifs(
-                vdif_in3,
-                vdif_in4,
+            open_csvs(
+                csv_autos_if2,
+                csv_cross_if2,
                 # for measurement (required)
                 chassis=chassis,
                 interface=2,
@@ -226,8 +199,6 @@ def auto(
                 integ_time=integ_time,
                 signal_sb=signal_sb if signal_if == 2 else None,
                 signal_chan=signal_chan if signal_if == 2 else None,
-                # for file loading (optional)
-                join=join,
             ),
             join=join,
         )
@@ -249,73 +220,6 @@ def auto(
             ds_if2.to_zarr(zarr_if2, mode="w")
 
         return zarr_if1.resolve(), zarr_if2.resolve()
-
-
-def dump(
-    vdif: Union[Path, str],
-    /,
-    *,
-    # for connection (required)
-    dest_addr: str,
-    dest_port: int,
-    # for connection (optional)
-    group: str = GROUP,
-    # for file saving (optional)
-    cancel: Optional[Event] = None,
-    timeout: Optional[float] = None,
-    progress: bool = False,
-    overwrite: bool = False,
-) -> None:
-    """Receive and dump DRS4 data per input into a VDIF file.
-
-    Args:
-        vdif: Path of the output VDIF file.
-        dest_addr: Destination IP address.
-        dest_port: Destination port number.
-        group: Multicast group IP address.
-        cancel: Event object to cancel dumping.
-        timeout: Timeout period in units of seconds.
-        progress: Whether to show the progress bar on screen.
-        overwrite: Whether to overwrite the existing VDIF file.
-
-    Raises:
-        FileExistsError: Raised if overwrite is not allowed
-            and the output VDIF file already exists.
-        TimeoutError: Raised if no DRS4 data (i.e. VDIF frame)
-            is received for the timeout period.
-
-    """
-    if not overwrite and Path(vdif).exists():
-        raise FileExistsError(vdif)
-
-    prefix = f"[{dest_addr=}, {dest_port=}]"
-    mreq = inet_aton(group) + inet_aton(dest_addr)
-
-    with (
-        open(vdif, "wb") as file,
-        socket(type=SOCK_DGRAM) as sock,
-        tqdm(desc=prefix, disable=not progress, unit="byte") as bar,
-    ):
-        # create socket
-        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        sock.bind(("", dest_port))
-        sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
-        sock.settimeout(timeout)
-
-        # start dumping
-        LOGGER.info(f"{prefix} Start dumping data.")
-
-        while cancel is None or not cancel.is_set():
-            frame, _ = sock.recvfrom(VDIF_FRAME_BYTES)
-
-            if len(frame) == VDIF_FRAME_BYTES:
-                file.write(frame)
-                bar.update(VDIF_FRAME_BYTES)
-            else:
-                LOGGER.warning(f"{prefix} Truncated frame.")
-
-        # finish dumping
-        LOGGER.info(f"{prefix} Finish dumping data.")
 
 
 @contextmanager
