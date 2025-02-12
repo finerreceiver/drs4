@@ -150,18 +150,18 @@ def cross(
             rows = result.stdout.split()
 
             # write header
-            if cycle == 1:
-                f_autos_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0]}\n")
-                f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1]}\n")
-                f_autos_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2]}\n")
-                f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3]}\n")
+            if cycle == 0:
+                f_autos_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
+                f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
+                f_autos_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
+                f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
 
             # write data
             for ch in range(CHAN_TOTAL):
-                f_autos_if1.write(f"{time},{rows[CSV_ROW_TOTAL * 0 + 1 + ch]}\n")
-                f_cross_if1.write(f"{time},{rows[CSV_ROW_TOTAL * 1 + 1 + ch]}\n")
-                f_autos_if2.write(f"{time},{rows[CSV_ROW_TOTAL * 2 + 1 + ch]}\n")
-                f_cross_if2.write(f"{time},{rows[CSV_ROW_TOTAL * 3 + 1 + ch]}\n")
+                f_autos_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n")
+                f_cross_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n")
+                f_autos_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n")
+                f_cross_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n")
 
             bar.update(1)
 
