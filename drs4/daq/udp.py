@@ -212,7 +212,7 @@ def auto(
                 signal_sb=signal_sb if signal_if == 1 else None,
                 signal_chan=signal_chan if signal_if == 1 else None,
                 # for file loading (optional)
-                vdif_join=join,
+                join=join,
             ),
             open_vdifs(
                 vdif_in3,
@@ -226,7 +226,7 @@ def auto(
                 signal_sb=signal_sb if signal_if == 2 else None,
                 signal_chan=signal_chan if signal_if == 2 else None,
                 # for file loading (optional)
-                vdif_join=join,
+                join=join,
             ),
             join=join,
         )

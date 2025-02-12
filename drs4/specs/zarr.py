@@ -3,17 +3,16 @@ __all__ = ["Zarr", "open_csvs", "open_vdifs"]
 
 # standard library
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from io import StringIO
+from datetime import datetime
 from os import PathLike
 from typing import Literal as L, Optional, Union, get_args
 
 
 # dependencies
 import numpy as np
-import pandas as pd
 import xarray as xr
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
+from .csv import open_csv_autos, open_csv_cross
 from .vdif import open_vdif
 
 
@@ -26,7 +25,7 @@ IntegTime = L[100, 200, 500, 1000]  # ms
 SideBand = L["USB", "LSB"]
 StrPath = Union[PathLike[str], str]
 TimeLike = Union[datetime, str]
-VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
+XarrayJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
 # constants
@@ -135,8 +134,8 @@ class Zarr(AsDataset):
 
 
 def open_csvs(
-    csv_autos: Union[StrPath, StringIO],
-    csv_cross: Union[StrPath, StringIO],
+    csv_autos: StrPath,
+    csv_cross: StrPath,
     /,
     *,
     # for measurement (required)
@@ -147,8 +146,32 @@ def open_csvs(
     # for measurement (optional)
     signal_sb: Optional[SideBand] = None,
     signal_chan: Optional[Channel] = None,
+    # for file loading (optional)
+    join: XarrayJoin = "inner",
 ) -> xr.Dataset:
-    """Open CSV files of auto/cross correlations as a Dataset."""
+    """Open CSV files of auto/cross correlations as a Dataset.
+
+    Args:
+        csv_autos: Path of input CSV file of auto-correlations.
+        csv_cross: Path of input CSV file of cross-correlation.
+        chassis: Chassis number of DRS4 (1|2).
+        interface: Interface number of DRS4 (1|2).
+        freq_range: Intermediate frequency range (inner|outer).
+        integ_time: Spectral integration time in ms (100|200|500|1000).
+        signal_sb: Signal sideband (USB|LSB).
+            If not specified, NA (missing indicator) will be assigned.
+        signal_chan: Signal channel number (0-511).
+            If not specified, -1 (missing indicator) will be assigned.
+        join: Method for joining the CSV files.
+
+    Returns:
+        Dataset of the input CSV files.
+
+    Raises:
+        ValueError: Raised if the given value of either chassis, freq_range,
+            integ_time, or interface is not valid.
+
+    """
     if chassis not in get_args(Chassis):
         raise ValueError("Chassis number must be 1|2.")
 
@@ -161,21 +184,24 @@ def open_csvs(
     if integ_time not in get_args(IntegTime):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
-    df_autos = pd.read_csv(csv_autos)
-    df_cross = pd.read_csv(csv_cross)
+    ds_autos, ds_cross = xr.align(
+        open_csv_autos(csv_autos),
+        open_csv_cross(csv_cross),
+        join=join,
+    )
 
     return Zarr.new(
         # dims
-        time=datetime.now(timezone.utc),
-        chan=np.arange(len(df_autos)),
+        time=ds_autos.time.data,
+        chan=ds_autos.chan.data,
         # coords
         signal_sb=[signal_sb if signal_sb is not None else "NA"],
         signal_chan=[signal_chan if signal_chan is not None else -1],
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
         # vars
-        auto_usb=[df_autos["out0"]],
-        auto_lsb=[df_autos["out0"]],
-        cross_2sb=[df_cross["real"] + 1j * df_cross["imag"]],
+        auto_usb=ds_autos.auto_usb.data,
+        auto_lsb=ds_autos.auto_lsb.data,
+        cross_2sb=ds_cross.cross_2sb.data,
         # attrs
         chassis=chassis,
         interface=interface,
@@ -197,7 +223,7 @@ def open_vdifs(
     signal_sb: Optional[SideBand] = None,
     signal_chan: Optional[Channel] = None,
     # for file loading (optional)
-    vdif_join: VDIFJoin = "inner",
+    join: XarrayJoin = "inner",
 ) -> xr.Dataset:
     """Open USB/LSB VDIF files as a Dataset.
 
@@ -213,7 +239,7 @@ def open_vdifs(
             If not specified, NA (missing indicator) will be assigned.
         signal_chan: Signal channel number (0-511).
             If not specified, -1 (missing indicator) will be assigned.
-        vdif_join: Method for joining the VDIF files.
+        join: Method for joining the VDIF files.
 
     Returns:
         Dataset of the input VDIF files.
@@ -234,9 +260,9 @@ def open_vdifs(
         raise ValueError("Spectral integration time must be inner|outer.")
 
     da_usb, da_lsb = xr.align(
-        open_vdif(vdif_usb, integ_time=integ_time, vdif_join=vdif_join),
-        open_vdif(vdif_lsb, integ_time=integ_time, vdif_join=vdif_join),
-        join=vdif_join,
+        open_vdif(vdif_usb, integ_time=integ_time, join=join),
+        open_vdif(vdif_lsb, integ_time=integ_time, join=join),
+        join=join,
     )
 
     if da_usb.integ_time != da_lsb.integ_time:

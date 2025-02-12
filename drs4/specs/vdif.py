@@ -17,7 +17,7 @@ from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
 # type hints
 IntegTime = L[100, 200, 500, 1000]
 StrPath = Union[PathLike[str], str]
-VDIFJoin = L["outer", "inner", "left", "right", "exact", "override"]
+XarrayJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
 # constants
@@ -93,7 +93,7 @@ def open_vdif(
     # for measurement (optional)
     integ_time: Optional[IntegTime] = None,
     # for file loading (optional)
-    vdif_join: VDIFJoin = "inner",
+    join: XarrayJoin = "inner",
 ) -> xr.DataArray:
     """Open a VDIF file as a DataArray.
 
@@ -101,7 +101,7 @@ def open_vdif(
         vdif: Path of input VDIF file.
         integ_time: Spectral integration time in ms (100|200|500|1000).
             If not specified, it will be inferred from the VDIF file.
-        vdif_join: Method of joining the first- and second-half spectra.
+        join: Method of joining the first- and second-half spectra.
 
     Returns:
         DataArray of the input VDIF file.
@@ -162,7 +162,7 @@ def open_vdif(
             ),
         ),
         dim="chan",
-        join=vdif_join,
+        join=join,
     )
 
 
