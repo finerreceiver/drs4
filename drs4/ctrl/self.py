@@ -3,18 +3,18 @@ __all__ = ["run"]
 
 # standard library
 from logging import getLogger
-from os import PathLike, getenv
+from os import getenv
 from subprocess import PIPE, CompletedProcess, run as sprun
 from typing import Optional, Union, overload
 
 
 # dependencies
 from ..specs.zarr import Chassis
+from ..utils import StrPath
 
 
 # type hints
 StrCP = CompletedProcess[str]
-StrPath = Union[PathLike[str], str]
 
 
 # constants

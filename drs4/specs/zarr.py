@@ -4,7 +4,6 @@ __all__ = ["Zarr", "open_csvs", "open_vdifs"]
 # standard library
 from dataclasses import dataclass, field
 from datetime import datetime
-from os import PathLike
 from typing import Literal as L, Optional, Union, get_args
 
 
@@ -14,6 +13,7 @@ import xarray as xr
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
 from .csv import open_csv_autos, open_csv_cross
 from .vdif import open_vdif
+from ..utils import StrPath, XarrayJoin
 
 
 # type hints
@@ -23,9 +23,7 @@ FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
 IntegTime = L[100, 200, 500, 1000]  # ms
 SideBand = L["USB", "LSB"]
-StrPath = Union[PathLike[str], str]
 TimeLike = Union[datetime, str]
-XarrayJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
 # constants

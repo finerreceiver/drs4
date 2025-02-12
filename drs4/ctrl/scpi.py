@@ -3,13 +3,12 @@ __all__ = ["connect", "send_commands", "send_commands_in"]
 
 # standard library
 from logging import getLogger
-from os import PathLike
 from socket import socket, AF_INET, SOCK_STREAM
 from typing import IO, Optional, Sequence, Union
 
 
-# type hints
-StrPath = Union[PathLike[str], str]
+# dependencies
+from ..utils import StrPath
 
 
 # constants

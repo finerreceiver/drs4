@@ -3,8 +3,7 @@ __all__ = ["CSVAutos", "CSVCross", "open_csv_autos", "open_csv_cross"]
 
 # standard library
 from dataclasses import dataclass, field
-from os import PathLike
-from typing import Literal as L, Union
+from typing import Literal as L
 
 
 # dependencies
@@ -12,10 +11,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
-
-
-# type hints
-StrPath = Union[PathLike[str], str]
+from ..utils import StrPath
 
 
 # constants

@@ -2,13 +2,11 @@ __all__ = ["auto"]
 
 
 # standard library
-from collections.abc import Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from logging import getLogger
 from multiprocessing import Manager
-from os import PathLike, getenv
+from os import getenv
 from pathlib import Path
 from socket import (
     IP_ADD_MEMBERSHIP,
@@ -19,16 +17,13 @@ from socket import (
     inet_aton,
     socket,
 )
-from tempfile import TemporaryDirectory
 from threading import Event
 from time import sleep
-from typing import Any, Literal as L, Optional, Union, get_args
+from typing import Optional, Union, get_args
 
 
 # dependencies
-import numpy as np
 import xarray as xr
-from numpy.typing import NDArray
 from tqdm import tqdm
 from ..ctrl.self import run
 from ..specs.vdif import VDIF_FRAME_BYTES
@@ -41,12 +36,7 @@ from ..specs.zarr import (
     SideBand,
     open_vdifs,
 )
-
-
-# type hints
-Axis = Optional[Union[Sequence[int], int]]
-Join = L["outer", "inner", "left", "right", "exact", "override"]
-StrPath = Union[PathLike[str], str]
+from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 
 # constants
@@ -77,7 +67,7 @@ def auto(
     # for file saving (optional)
     append: bool = False,
     integrate: bool = False,
-    join: Join = "inner",
+    join: XarrayJoin = "inner",
     overwrite: bool = False,
     progress: bool = False,
     workdir: Optional[StrPath] = None,
@@ -316,33 +306,3 @@ def dump(
 
         # finish dumping
         LOGGER.info(f"{prefix} Finish dumping data.")
-
-
-@contextmanager
-def set_workdir(workdir: Optional[StrPath] = None, /) -> Iterator[Path]:
-    """Set the working directory for output VDIF files."""
-    if workdir is not None:
-        yield Path(workdir).expanduser()
-    else:
-        with TemporaryDirectory() as workdir:
-            yield Path(workdir)
-
-
-def unique(array: NDArray[Any], /, axis: Axis = None) -> NDArray[Any]:
-    """Return unique values along given axis (axes)."""
-    if axis is None:
-        axis = list(range(array.ndim))
-
-    axes = np.atleast_1d(axis)
-    shape = np.array(array.shape)
-    newshape = np.prod(shape[axes]), *np.delete(shape, axes)
-
-    for ax in axes:
-        array = np.moveaxis(array, ax, 0)
-
-    result = np.unique(array.reshape(newshape), axis=0)
-
-    if result.shape[0] != 1:
-        raise ValueError("Array values are not unique.")
-
-    return result[0]
