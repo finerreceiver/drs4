@@ -90,7 +90,7 @@ def open_csv_autos(csv: StrPath, /) -> xr.Dataset:
         time=ds[COL_TIME].data,
         chan=np.arange(ds.sizes[COL_FREQ]),
         auto_usb=ds[COL_USB].data,
-        auto_lsb=ds[COL_USB].data,
+        auto_lsb=ds[COL_LSB].data,
     )
 
 
