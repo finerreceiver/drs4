@@ -15,6 +15,7 @@ __all__ = [
     "CSV_AUTOS_FORMAT",
     "CSV_CROSS_FORMAT",
     "OBSID_FORMAT",
+    "TIME_UNITS",
     "VDIF_FORMAT",
     "ZARR_FORMAT",
     # constants (environment variables)
@@ -69,6 +70,7 @@ FREQ_OUTER = FREQ_INTERVAL * np.arange(CHAN_TOTAL * 1, CHAN_TOTAL * 2)  # GHz
 CSV_AUTOS_FORMAT = "drs4-{0}-chassis{1}-autos-if{2}.csv"
 CSV_CROSS_FORMAT = "drs4-{0}-chassis{1}-cross-if{2}.csv"
 OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
+TIME_UNITS = "microseconds since 2000-01-01T00:00:00"
 VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
 
