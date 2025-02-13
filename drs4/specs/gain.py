@@ -54,8 +54,8 @@ def open_gain(
     ms: StrPath,
     /,
     *,
-    format: L["DataFrame"] = "DataFrame",
-) -> pd.DataFrame: ...
+    format: L["Dataset"] = "Dataset",
+) -> xr.Dataset: ...
 
 
 @overload
@@ -63,8 +63,8 @@ def open_gain(
     ms: StrPath,
     /,
     *,
-    format: L["Dataset"] = "Dataset",
-) -> xr.Dataset: ...
+    format: L["DataFrame"] = "DataFrame",
+) -> pd.DataFrame: ...
 
 
 def open_gain(
