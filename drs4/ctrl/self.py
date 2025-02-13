@@ -19,6 +19,7 @@ StrCP = CompletedProcess[str]
 
 # constants
 LOGGER = getLogger(__name__)
+PATH_CMD_DIR = "~/DRS4/cmd"
 
 
 @overload
@@ -28,7 +29,7 @@ def run(
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
     timeout: Optional[float] = None,
-    workdir: StrPath = "~/DRS4/cmd",
+    workdir: StrPath = PATH_CMD_DIR,
 ) -> StrCP: ...
 
 
@@ -39,7 +40,7 @@ def run(
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
     timeout: Optional[float] = None,
-    workdir: StrPath = "~/DRS4/cmd",
+    workdir: StrPath = PATH_CMD_DIR,
 ) -> tuple[StrCP, StrCP]: ...
 
 
@@ -51,7 +52,7 @@ def run(
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
     timeout: Optional[float] = None,
-    workdir: StrPath = "~/DRS4/cmd",
+    workdir: StrPath = PATH_CMD_DIR,
 ) -> Union[StrCP, tuple[StrCP, StrCP]]:
     """Run commands in DRS4.
 

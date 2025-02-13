@@ -77,7 +77,7 @@ VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
 
 
-# constants (environment variavles)
+# constants (environment variables)
 ENV_CTRL_ADDR = "DRS4_CHASSIS{0}_CTRL_ADDR"
 ENV_CTRL_USER = "DRS4_CHASSIS{0}_CTRL_USER"
 ENV_DEST_ADDR = "DRS4_CHASSIS{0}_DEST_ADDR"
