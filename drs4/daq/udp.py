@@ -44,8 +44,8 @@ from ..specs.common import (
     IntegTime,
     SideBand,
 )
+from ..specs.ms import open_vdifs
 from ..specs.vdif import VDIF_FRAME_BYTES
-from ..specs.zarr import open_vdifs
 from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 

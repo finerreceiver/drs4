@@ -1,4 +1,4 @@
-__all__ = ["Zarr", "open_csvs", "open_vdifs"]
+__all__ = ["MS", "open_csvs", "open_vdifs"]
 
 
 # standard library
@@ -51,8 +51,8 @@ class SignalSB:
 
 
 @dataclass
-class Zarr(AsDataset):
-    """Data specification of DRS4 Zarr."""
+class MS(AsDataset):
+    """Data specification of DRS4 measurement set."""
 
     # dims
     time: Coordof[Time]
@@ -152,7 +152,7 @@ def open_csvs(
         join=join,
     )
 
-    return Zarr.new(
+    return MS.new(
         # dims
         time=ds_autos.time.data,
         chan=ds_autos.chan.data,
@@ -236,7 +236,7 @@ def open_vdifs(
     if da_usb.integ_time != da_lsb.integ_time:
         raise RuntimeError("USB/LSB spectral integration times must be same.")
 
-    return Zarr.new(
+    return MS.new(
         # dims
         time=da_usb.time.data,
         chan=da_usb.chan.data,

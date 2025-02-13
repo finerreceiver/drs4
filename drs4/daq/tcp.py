@@ -30,8 +30,8 @@ from ..specs.common import (
     Interface,
     SideBand,
 )
+from ..specs.ms import open_csvs
 from ..specs.csv import TIME_FORMAT
-from ..specs.zarr import open_csvs
 from ..utils import StrPath, XarrayJoin, set_workdir, unique
 
 

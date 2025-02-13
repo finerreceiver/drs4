@@ -9,8 +9,7 @@ from typing import Optional, Union, overload
 
 
 # dependencies
-from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER
-from ..specs.zarr import Chassis
+from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER, Chassis
 from ..utils import StrPath
 
 
