@@ -28,6 +28,8 @@ from tqdm import tqdm
 from ..cal.dsbs import gain
 from ..ctrl.self import run
 from ..specs.common import (
+    ENV_CTRL_ADDR,
+    ENV_CTRL_USER,
     ENV_DEST_ADDR,
     ENV_DEST_PORT1,
     ENV_DEST_PORT2,
@@ -93,6 +95,12 @@ def auto(
 ) -> tuple[Path, Path]:
     """"""
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
+
+    if ctrl_addr is None:
+        ctrl_addr = getenv(ENV_CTRL_ADDR.format(chassis), "")
+
+    if ctrl_user is None:
+        ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
     if dest_addr is None:
         dest_addr = getenv(ENV_DEST_ADDR.format(chassis), "")
