@@ -20,6 +20,7 @@ from ..specs.common import (
     ENV_CTRL_ADDR,
     ENV_CTRL_USER,
     OBSID_FORMAT,
+    TIME_UNITS,
     ZARR_FORMAT,
     Channel,
     Chassis,
@@ -209,11 +210,11 @@ def cross(
         if zarr_if1.exists() and append:
             ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")
         else:
-            ds_if1.to_zarr(zarr_if1, mode="w")
+            ds_if1.to_zarr(zarr_if1, mode="w", encoding={"time": {"units": TIME_UNITS}})
 
         if zarr_if2.exists() and append:
             ds_if2.to_zarr(zarr_if2, mode="a", append_dim="time")
         else:
-            ds_if2.to_zarr(zarr_if2, mode="w")
+            ds_if2.to_zarr(zarr_if2, mode="w", encoding={"time": {"units": TIME_UNITS}})
 
         return zarr_if1.resolve(), zarr_if2.resolve()

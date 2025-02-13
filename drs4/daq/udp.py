@@ -33,6 +33,7 @@ from ..specs.common import (
     ENV_DEST_PORT3,
     ENV_DEST_PORT4,
     OBSID_FORMAT,
+    TIME_UNITS,
     VDIF_FORMAT,
     ZARR_FORMAT,
     Channel,
@@ -231,12 +232,12 @@ def auto(
         if zarr_if1.exists() and append:
             ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")
         else:
-            ds_if1.to_zarr(zarr_if1, mode="w")
+            ds_if1.to_zarr(zarr_if1, mode="w", encoding={"time": {"units": TIME_UNITS}})
 
         if zarr_if2.exists() and append:
             ds_if2.to_zarr(zarr_if2, mode="a", append_dim="time")
         else:
-            ds_if2.to_zarr(zarr_if2, mode="w")
+            ds_if2.to_zarr(zarr_if2, mode="w", encoding={"time": {"units": TIME_UNITS}})
 
         return zarr_if1.resolve(), zarr_if2.resolve()
 
