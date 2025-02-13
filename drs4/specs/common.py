@@ -2,6 +2,7 @@ __all__ = [
     # type hints
     "Channel",
     "Chassis",
+    "DSPMode",
     "FreqRange",
     "Interface",
     "IntegTime",
@@ -53,6 +54,7 @@ from xarray_dataclasses import Attr, Data
 # type hints
 Channel = int
 Chassis = L[1, 2]
+DSPMode = L["IQ", "SB"]
 FreqRange = L["inner", "outer"]
 Interface = L[1, 2]
 IntegTime = L[100, 200, 500, 1000]  # ms

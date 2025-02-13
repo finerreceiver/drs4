@@ -24,6 +24,7 @@ from ..specs.common import (
     ZARR_FORMAT,
     Channel,
     Chassis,
+    DSPMode,
     FreqRange,
     IntegTime,
     Interface,
@@ -62,6 +63,11 @@ def cross(
     workdir: Optional[StrPath] = None,
     zarr_if1: Optional[StrPath] = None,
     zarr_if2: Optional[StrPath] = None,
+    # for DRS4 settings (optional)
+    dsp_mode: DSPMode = "IQ",
+    gain_if1: Optional[StrPath] = None,
+    gain_if2: Optional[StrPath] = None,
+    settings: bool = True,
     # for connection (optional)
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
@@ -103,17 +109,18 @@ def cross(
     if (zarr_if2 := Path(zarr_if2)).exists() and not append and not overwrite:
         raise FileExistsError(zarr_if2)
 
-    result = run(
-        # for interface 1
-        f"./set_intg_time.py --In 1 --It {integ_time // 100}",
-        f"./get_intg_time.py --In 1",
-        # for interface 2
-        f"./set_intg_time.py --In 3 --It {integ_time // 100}",
-        f"./get_intg_time.py --In 3",
-        chassis=chassis,
-        timeout=timeout,
-    )
-    result.check_returncode()
+    if settings:
+        result = run(
+            # for interface 1
+            f"./set_intg_time.py --In 1 --It {integ_time // 100}",
+            f"./set_mode.py --In 1 -m {dsp_mode}",
+            # for interface 2
+            f"./set_intg_time.py --In 3 --It {integ_time // 100}",
+            f"./set_mode.py --In 3 -m {dsp_mode}",
+            chassis=chassis,
+            timeout=timeout,
+        )
+        result.check_returncode()
 
     with (
         set_workdir(workdir) as workdir,
