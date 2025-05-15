@@ -1,0 +1,4 @@
+#!/bin/bash -eu
+
+sphinx-apidoc -efMT -d 2 -o docs/_apidoc drs4
+sphinx-build -a docs docs/_build
