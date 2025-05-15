@@ -165,43 +165,54 @@ def cross(
             mode="w",
         ) as f_cross_if2,
     ):
-        for cycle in range(duration):
-            time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
-            result = run(
-                # for interface 1
-                f"./get_corr_rslt.py --In 1",
-                f"cat {CSV_AUTOS}",
-                f"cat {CSV_CROSS}",
-                # for interface 2
-                f"./get_corr_rslt.py --In 3",
-                f"cat {CSV_AUTOS}",
-                f"cat {CSV_CROSS}",
-                chassis=chassis,
-                timeout=timeout,
-            )
-            result.check_returncode()
-            rows = result.stdout.split()
+        try:
+            for cycle in range(duration):
+                time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
+                result = run(
+                    # for interface 1
+                    f"./get_corr_rslt.py --In 1",
+                    f"cat {CSV_AUTOS}",
+                    f"cat {CSV_CROSS}",
+                    # for interface 2
+                    f"./get_corr_rslt.py --In 3",
+                    f"cat {CSV_AUTOS}",
+                    f"cat {CSV_CROSS}",
+                    chassis=chassis,
+                    timeout=timeout,
+                )
+                result.check_returncode()
+                rows = result.stdout.split()
 
-            # write header
-            if cycle == 0:
-                f_autos_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
-                f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
-                f_autos_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
-                f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
+                # write header
+                if cycle == 0:
+                    f_autos_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
+                    f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
+                    f_autos_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
+                    f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
 
-            # write data
-            for ch in range(CHAN_TOTAL):
-                f_autos_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n")
-                f_cross_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n")
-                f_autos_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n")
-                f_cross_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n")
+                # write data
+                for ch in range(CHAN_TOTAL):
+                    f_autos_if1.write(
+                        f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n"
+                    )
+                    f_cross_if1.write(
+                        f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n"
+                    )
+                    f_autos_if2.write(
+                        f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n"
+                    )
+                    f_cross_if2.write(
+                        f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n"
+                    )
 
-            bar.update(1)
-
-        f_autos_if1.flush()
-        f_cross_if1.flush()
-        f_autos_if2.flush()
-        f_cross_if2.flush()
+                bar.update(1)
+        except KeyboardInterrupt:
+            LOGGER.warning("Data acquisition interrupted by user.")
+        finally:
+            f_autos_if1.flush()
+            f_cross_if1.flush()
+            f_autos_if2.flush()
+            f_cross_if2.flush()
 
         ds_if1, ds_if2 = xr.align(
             open_csvs(
