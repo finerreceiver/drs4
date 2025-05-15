@@ -3,14 +3,15 @@ __all__ = ["gain"]
 
 # standard library
 from subprocess import PIPE, run as sprun
-from typing import Optional, get_args
+from typing import Optional, Union, get_args
 
 
 # dependencies
+import xarray as xr
 from ..ctrl.self import run
 from ..specs.common import Chassis, Interface
 from ..specs.gain import GAIN_ONES, GAIN_ZEROS, open_gain, to_dataframe
-from ..utils import StrPath, set_workdir
+from ..utils import StrPath, is_strpath, set_workdir
 
 
 # constants
@@ -18,7 +19,7 @@ PATH_COEF_TABLE = "~/DRS4/mrdsppy/coef_table/new_coef_table.csv"
 
 
 def gain(
-    ms: Optional[StrPath] = None,
+    ms: Optional[Union[xr.Dataset, StrPath]] = None,
     /,
     *,
     # for measurement (required)
@@ -36,7 +37,7 @@ def gain(
     """Set a gain file (DRS4 MS file) to DRS4.
 
     Args:
-        ms: Path of input gain file (DRS4 MS file).
+        ms: Path of input gain file (DRS4 MS file) or gain Dataset itself.
         chassis: Chassis number of DRS4 (1|2).
             If not specified, the gain file will be applied to both chasses.
         interface: Interface number of DRS4 (1|2).
@@ -93,7 +94,9 @@ def gain(
     if interface not in get_args(Interface):
         raise ValueError("Interface number must be 1|2.")
 
-    if ms is not None and not ones and not zeros:
+    if isinstance(ms, xr.Dataset) and not ones and not zeros:
+        ds = ms
+    elif is_strpath(ms) and not ones and not zeros:
         ds = open_gain(ms)
     elif ms is None and ones and not zeros:
         ds = GAIN_ONES

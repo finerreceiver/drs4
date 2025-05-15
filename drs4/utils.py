@@ -1,4 +1,4 @@
-__all__ = ["StrPath", "XarrayJoin", "set_workdir", "unique"]
+__all__ = ["StrPath", "XarrayJoin", "is_strpath", "set_workdir", "unique"]
 
 
 # standard library
@@ -13,12 +13,18 @@ from typing import Any, Literal as L, Optional, Union
 # dependencies
 import numpy as np
 from numpy.typing import NDArray
+from typing_extensions import TypeGuard
 
 
 # type hints
 Axis = Optional[Union[Sequence[int], int]]
 StrPath = Union[PathLike[str], str]
 XarrayJoin = L["outer", "inner", "left", "right", "exact", "override"]
+
+
+def is_strpath(obj: Any, /) -> TypeGuard[StrPath]:
+    """Check if given object can provide a file system path."""
+    return isinstance(obj, (PathLike, str))
 
 
 @contextmanager

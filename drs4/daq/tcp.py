@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from logging import getLogger
 from os import getenv
 from pathlib import Path
-from typing import Optional, get_args
+from typing import Optional, Union, get_args
 
 
 # dependencies
@@ -66,8 +66,8 @@ def cross(
     zarr_if2: Optional[StrPath] = None,
     # for DRS4 settings (optional)
     dsp_mode: DSPMode = "IQ",
-    gain_if1: Optional[StrPath] = None,
-    gain_if2: Optional[StrPath] = None,
+    gain_if1: Optional[Union[xr.Dataset, StrPath]] = None,
+    gain_if2: Optional[Union[xr.Dataset, StrPath]] = None,
     settings: bool = True,
     # for connection (optional)
     ctrl_addr: Optional[str] = None,
