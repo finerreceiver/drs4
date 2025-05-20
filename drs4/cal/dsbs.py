@@ -2,6 +2,7 @@ __all__ = ["gain"]
 
 
 # standard library
+from logging import getLogger
 from subprocess import PIPE, run as sprun
 from typing import Optional, Union, get_args
 
@@ -15,6 +16,7 @@ from ..utils import StrPath, is_strpath, set_workdir
 
 
 # constants
+LOGGER = getLogger(__name__)
 PATH_COEF_TABLE = "~/DRS4/mrdsppy/coef_table/new_coef_table.csv"
 
 
@@ -87,6 +89,9 @@ def gain(
             )
 
         return
+
+    for key, val in locals().items():
+        LOGGER.info(f"{key}: {val!r}")
 
     if chassis not in get_args(Chassis):
         raise ValueError("Chassis number must be 1|2.")
