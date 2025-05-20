@@ -4,10 +4,11 @@ __all__ = ["StrPath", "XarrayJoin", "is_strpath", "set_logger", "set_workdir", "
 # standard library
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from logging import FileHandler, StreamHandler, getLogger
+from logging import FileHandler, Formatter, StreamHandler, getLogger
 from os import PathLike
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from time import gmtime
 from typing import Any, Literal as L, Optional, Union
 
 
@@ -80,8 +81,19 @@ def set_logger(
     logger.setLevel(level.upper())
     logger.handlers = []
 
+    formatter = Formatter(
+        fmt="[{asctime}Z {name}.{funcName} {levelname}] {message}",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        style="{",
+    )
+    formatter.converter = gmtime
+
     if file:
-        logger.addHandler(FileHandler(file))
+        handler = FileHandler(file)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
     if stderr:
-        logger.addHandler(StreamHandler())
+        handler = StreamHandler()
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
