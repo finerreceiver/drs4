@@ -104,8 +104,12 @@ def run(
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
+    LOGGER.debug("(")
+
     for key, val in locals().items():
-        LOGGER.debug(f"{key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
+
+    LOGGER.debug(")")
 
     script = ";".join((f"cd {workdir}", *commands))
     args = f"ssh {ctrl_user}@{ctrl_addr} '{script}'"
