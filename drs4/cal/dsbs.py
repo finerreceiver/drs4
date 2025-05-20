@@ -90,8 +90,12 @@ def gain(
 
         return
 
+    LOGGER.info("(")
+
     for key, val in locals().items():
-        LOGGER.info(f"{key}: {val!r}")
+        LOGGER.info(f"  {key}: {val!r}")
+
+    LOGGER.info(")")
 
     if chassis not in get_args(Chassis):
         raise ValueError("Chassis number must be 1|2.")
