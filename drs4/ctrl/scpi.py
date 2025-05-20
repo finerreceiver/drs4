@@ -32,11 +32,14 @@ class CustomSocket(socket):
         encoding: str = DEFAULT_ENCODING,
     ) -> int:
         """Same as socket.send(), but accepts string, not bytes."""
+        for key, val in locals().items():
+            LOGGER.debug(f"{key}: {val!r}")
+
         encoded = (string + end).encode(encoding)
         n_bytes = super().send(encoded, flags)
 
         host, port = self.getpeername()
-        LOGGER.info(f"{host}:{port} <- {string}")
+        LOGGER.debug(f"{host}:{port} <- {string}")
         return n_bytes
 
     def recv(
@@ -47,11 +50,14 @@ class CustomSocket(socket):
         encoding: str = DEFAULT_ENCODING,
     ) -> str:
         """Same as socket.recv(), but returns string, not bytes."""
+        for key, val in locals().items():
+            LOGGER.debug(f"{key}: {val!r}")
+
         received = super().recv(bufsize, flags)
         string = received.decode(encoding).rstrip(end)
 
         host, port = self.getpeername()
-        LOGGER.info(f"{host}:{port} -> {string}")
+        LOGGER.debug(f"{host}:{port} -> {string}")
         return string
 
 
@@ -81,6 +87,9 @@ def connect(
                 print(sock.recv())
 
     """
+    for key, val in locals().items():
+        LOGGER.debug(f"{key}: {val!r}")
+
     sock = CustomSocket(AF_INET, SOCK_STREAM)
     sock.settimeout(timeout)
     sock.connect((host, port))
@@ -122,6 +131,9 @@ def send_commands(
             send_commands(['*RST', '*CLS'], '192.168.1.3', 5000)
 
     """
+    for key, val in locals().items():
+        LOGGER.debug(f"{key}: {val!r}")
+
     if isinstance(commands, str):
         commands = (commands,)
 
@@ -171,5 +183,8 @@ def send_commands_in(
             send_commands_in('commands.txt', '192.168.1.3', 5000)
 
     """
+    for key, val in locals().items():
+        LOGGER.debug(f"{key}: {val!r}")
+
     with open(path, encoding=encoding) as f:
         send_commands(f, host, port, timeout, encoding, autorecv, bufsize)

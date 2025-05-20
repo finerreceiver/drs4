@@ -104,8 +104,12 @@ def run(
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
+    for key, val in locals().items():
+        LOGGER.debug(f"{key}: {val!r}")
+
     script = ";".join((f"cd {workdir}", *commands))
-    LOGGER.info(args := f"ssh {ctrl_user}@{ctrl_addr} '{script}'")
+    args = f"ssh {ctrl_user}@{ctrl_addr} '{script}'"
+    LOGGER.debug(args)
 
     result = sprun(
         args,
@@ -117,7 +121,7 @@ def run(
     )
 
     if result.stdout:
-        LOGGER.info(result.stdout)
+        LOGGER.debug(result.stdout)
 
     if result.stderr:
         LOGGER.error(result.stderr)
