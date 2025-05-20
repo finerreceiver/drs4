@@ -1,9 +1,10 @@
-__all__ = ["StrPath", "XarrayJoin", "is_strpath", "set_workdir", "unique"]
+__all__ = ["StrPath", "XarrayJoin", "is_strpath", "set_logger", "set_workdir", "unique"]
 
 
 # standard library
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from logging import FileHandler, StreamHandler, getLogger
 from os import PathLike
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -14,6 +15,10 @@ from typing import Any, Literal as L, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import TypeGuard
+
+
+# constants
+LOGGER = getLogger(__name__)
 
 
 # type hints
@@ -55,3 +60,28 @@ def unique(array: NDArray[Any], /, axis: Axis = None) -> NDArray[Any]:
         raise ValueError("Array values are not unique.")
 
     return result[0]
+
+
+def set_logger(
+    *,
+    file: StrPath = "drs4.log",
+    level: str = "INFO",
+    stderr: bool = True,
+) -> None:
+    """Setup the DRS4 package root logger.
+
+    Args:
+        file: If given, log will be written in it.
+        level: Logging level (e.g., INFO, DEBUG).
+        stderr: If True, log will be sent to stderr.
+
+    """
+    logger = getLogger(__name__.split(".")[0])
+    logger.setLevel(level.upper())
+    logger.handlers = []
+
+    if file:
+        logger.addHandler(FileHandler(file))
+
+    if stderr:
+        logger.addHandler(StreamHandler())
