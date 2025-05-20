@@ -2,8 +2,16 @@ __all__ = ["ctrl", "daq", "specs", "utils"]
 __version__ = "0.1.0"
 
 
-# submodules and subpackages
+# standard library
+from logging import getLogger
+
+
+# dependencies
 from . import ctrl
 from . import daq
 from . import specs
 from . import utils
+
+
+# constants
+LOGGER = getLogger(__name__)
