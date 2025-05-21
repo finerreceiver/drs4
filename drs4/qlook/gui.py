@@ -37,6 +37,7 @@ def run(
     # for connection (optional)
     ctrl_addr: Optional[str] = None,
     ctrl_user: Optional[str] = None,
+    timeout: Optional[float] = None,
     # for plotting (optional)
     figsize: Optional[tuple[int, int]] = (12, 6),
     interval: int = 10,
@@ -50,6 +51,7 @@ def run(
             environment variable ``DRS4_CHASSIS[1|2]_CTRL_ADDR`` will be used.
         ctrl_user: User name of DRS4. If not specified,
             environment variable ``DRS4_CHASSIS[1|2]_CTRL_USER`` will be used.
+        timeout: Timeout of the connection process in seconds.
         figsize: Width and height of the display in inches.
         interval: Refresh interval of the display in seconds.
         workdir: Working directory where intermediate images will be put.
@@ -77,6 +79,7 @@ def run(
                 stdout=PIPE,
                 stderr=PIPE,
                 shell=True,
+                timeout=timeout,
             )
 
             for ax in axes.flatten():
