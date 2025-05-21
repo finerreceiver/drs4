@@ -125,9 +125,11 @@ def run(
     )
 
     if result.stdout:
-        LOGGER.debug(result.stdout)
+        for line in result.stdout.split("\n"):
+            LOGGER.debug(line)
 
     if result.stderr:
-        LOGGER.error(result.stderr)
+        for line in result.stderr.split("\n"):
+            LOGGER.error(line)
 
     return result
