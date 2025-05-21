@@ -72,6 +72,7 @@ def run(
 
     with set_workdir(workdir) as workdir:
         fig, axes = plt.subplots(2, 3, figsize=figsize)
+        fig.subplots_adjust()
 
         def plot(frame: int, /) -> None:
             sprun(
@@ -92,20 +93,24 @@ def run(
             axes[1, 1].imshow(Image.open(workdir / IMAGE_11))
             axes[1, 2].imshow(Image.open(workdir / IMAGE_12))
 
-            axes[0, 1].text(0, 100, "Bit Distribution (Port 1)", fontsize=15)
-            axes[0, 2].text(0, 100, "Bit Distribution (Port 2)", fontsize=15)
-            axes[1, 1].text(0, 100, "Bit Distribution (Port 3)", fontsize=15)
-            axes[1, 2].text(0, 100, "Bit Distribution (Port 4)", fontsize=15)
+            axes[0, 0].set_xlabel(f"Last Updated: {mtime(workdir / IMAGE_00)}")
+            axes[0, 1].set_xlabel(f"Last Updated: {mtime(workdir / IMAGE_01)}")
+            axes[0, 2].set_xlabel(f"Last Updated: {mtime(workdir / IMAGE_02)}")
+            axes[1, 0].set_xlabel(f"Last Updated: {mtime(workdir / IMAGE_10)}")
+            axes[1, 1].set_xlabel(f"Last Updated: {mtime(workdir / IMAGE_11)}")
+            axes[1, 2].set_xlabel(f"Last Updated: {mtime(workdir / IMAGE_12)}")
 
-            axes[0, 0].set_title(f"Last Updated: {mtime(workdir / IMAGE_00)}")
-            axes[0, 1].set_title(f"Last Updated: {mtime(workdir / IMAGE_01)}")
-            axes[0, 2].set_title(f"Last Updated: {mtime(workdir / IMAGE_02)}")
-            axes[1, 0].set_title(f"Last Updated: {mtime(workdir / IMAGE_10)}")
-            axes[1, 1].set_title(f"Last Updated: {mtime(workdir / IMAGE_11)}")
-            axes[1, 2].set_title(f"Last Updated: {mtime(workdir / IMAGE_12)}")
+            axes[0, 1].text(0, 55, "Bit Distribution (Port 1)", fontsize=15)
+            axes[0, 2].text(0, 55, "Bit Distribution (Port 2)", fontsize=15)
+            axes[1, 1].text(0, 55, "Bit Distribution (Port 3)", fontsize=15)
+            axes[1, 2].text(0, 55, "Bit Distribution (Port 4)", fontsize=15)
 
             for ax in axes.flatten():
-                ax.axis("off")
+                for position in ("left", "bottom", "right", "top"):
+                    ax.spines[position].set_visible(False)
+
+                ax.set_yticks([])
+                ax.set_xticks([])
 
     try:
         plot(-1)
