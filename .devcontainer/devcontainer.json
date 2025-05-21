@@ -12,21 +12,17 @@
         "vscode": {
             "extensions": [
                 "github.vscode-pull-request-github",
-                "mhutchie.git-graph",
                 "ms-python.black-formatter",
-                "ms-python.python",
-                "streetsidesoftware.code-spell-checker",
-                "tamasfe.even-better-toml"
+                "ms-python.python"
             ],
             "settings": {
                 "files.insertFinalNewline": true,
                 "files.trimTrailingWhitespace": true,
+                "python.analysis.autoImportCompletions": true,
+                "python.languageServer": "Pylance",
                 "[python]": {
                     "editor.defaultFormatter": "ms-python.black-formatter",
                     "editor.formatOnSave": true,
-                    "editor.insertSpaces": true,
-                    "editor.tabSize": 4,
-                    "python.languageServer": "Pylance"
                 }
             }
         }
