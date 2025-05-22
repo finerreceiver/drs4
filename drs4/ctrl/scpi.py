@@ -32,13 +32,6 @@ class CustomSocket(socket):
         encoding: str = DEFAULT_ENCODING,
     ) -> int:
         """Same as socket.send(), but accepts string, not bytes."""
-        LOGGER.debug("(")
-
-        for key, val in locals().items():
-            LOGGER.debug(f"  {key}: {val!r}")
-
-        LOGGER.debug(")")
-
         encoded = (string + end).encode(encoding)
         n_bytes = super().send(encoded, flags)
 
@@ -54,13 +47,6 @@ class CustomSocket(socket):
         encoding: str = DEFAULT_ENCODING,
     ) -> str:
         """Same as socket.recv(), but returns string, not bytes."""
-        LOGGER.debug("(")
-
-        for key, val in locals().items():
-            LOGGER.debug(f"  {key}: {val!r}")
-
-        LOGGER.debug(")")
-
         received = super().recv(bufsize, flags)
         string = received.decode(encoding).rstrip(end)
 
