@@ -27,7 +27,6 @@ def gain(
     # for measurement (required)
     chassis: Optional[Chassis] = None,
     interface: Optional[Interface] = None,
-    apply: bool = True,
     ones: bool = False,
     zeros: bool = False,
     # for connection (optional)
@@ -44,8 +43,6 @@ def gain(
             If not specified, the gain file will be applied to both chasses.
         interface: Interface number of DRS4 (1|2).
             If not specified, the gain file will be applied to both interfaces.
-        apply: If True, the gain will also be applied to the DRS4 FPGAs.
-            Otherwise, the gain will be sent to DRS4 but not applied to them.
         zeros: If True, the zero-filled gain will be applied.
             It cannot be used with an input gain file nor ``ones``.
         ones: If True, the one-filled gain will be applied.
@@ -127,12 +124,11 @@ def gain(
         )
         result.check_returncode()
 
-        if apply:
-            result = run(
-                f"./set_coef_tbl.py --In {1 if interface == 1 else 3}",
-                chassis=chassis,
-                ctrl_addr=ctrl_addr,
-                ctrl_user=ctrl_user,
-                timeout=timeout,
-            )
-            result.check_returncode()
+        result = run(
+            f"./set_coef_tbl.py --In {1 if interface == 1 else 3}",
+            chassis=chassis,
+            ctrl_addr=ctrl_addr,
+            ctrl_user=ctrl_user,
+            timeout=timeout,
+        )
+        result.check_returncode()
