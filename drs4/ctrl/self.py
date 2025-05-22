@@ -1,4 +1,4 @@
-__all__ = ["run"]
+__all__ = ["run", "send"]
 
 
 # standard library
@@ -117,6 +117,114 @@ def run(
 
     result = sprun(
         args,
+        shell=True,
+        stderr=PIPE,
+        stdout=PIPE,
+        text=True,
+        timeout=timeout,
+    )
+
+    if result.stdout:
+        for line in result.stdout.split("\n"):
+            LOGGER.debug(line)
+
+    if result.stderr:
+        for line in result.stderr.split("\n"):
+            LOGGER.error(line)
+
+    return result
+
+
+@overload
+def send(
+    file: StrPath,
+    to: StrPath,
+    /,
+    *,
+    chassis: Chassis,
+    ctrl_addr: Optional[str] = None,
+    ctrl_user: Optional[str] = None,
+    timeout: Optional[float] = None,
+) -> StrCP: ...
+
+
+@overload
+def send(
+    file: StrPath,
+    to: StrPath,
+    /,
+    *,
+    chassis: None = None,
+    ctrl_addr: Optional[str] = None,
+    ctrl_user: Optional[str] = None,
+    timeout: Optional[float] = None,
+) -> tuple[StrCP, StrCP]: ...
+
+
+def send(
+    # for file sending (required)
+    file: StrPath,
+    to: StrPath,
+    /,
+    *,
+    # for connection (optional)
+    chassis: Optional[Chassis] = None,
+    ctrl_addr: Optional[str] = None,
+    ctrl_user: Optional[str] = None,
+    timeout: Optional[float] = None,
+) -> Union[StrCP, tuple[StrCP, StrCP]]:
+    """Send a file to DRS4.
+
+    Args:
+        file: Path of the file to be sent.
+        to: Path of the destination in DRS4.
+        chassis: Chassis number of DRS4 (1|2).
+            If not specified, the file will be sent to both chasses.
+        ctrl_addr: IP address of DRS4. If not specified,
+            environment variable ``DRS4_CHASSIS[1|2]_CTRL_ADDR`` will be used.
+        ctrl_user: User name of DRS4. If not specified,
+            environment variable ``DRS4_CHASSIS[1|2]_CTRL_USER`` will be used.
+        timeout: Timeout of the connection and the sending in seconds.
+
+    Returns:
+        Completed process object(s) of the sending(s).
+
+    """
+    if chassis is None:
+        return (
+            send(
+                file,
+                to,
+                chassis=1,
+                ctrl_addr=ctrl_addr,
+                ctrl_user=ctrl_user,
+                timeout=timeout,
+            ),
+            send(
+                file,
+                to,
+                chassis=2,
+                ctrl_addr=ctrl_addr,
+                ctrl_user=ctrl_user,
+                timeout=timeout,
+            ),
+        )
+
+    if ctrl_addr is None:
+        ctrl_addr = getenv(ENV_CTRL_ADDR.format(chassis), "")
+
+    if ctrl_user is None:
+        ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
+
+    LOGGER.debug("(")
+
+    for key, val in locals().items():
+        LOGGER.debug(f"  {key}: {val!r}")
+
+    LOGGER.debug(")")
+
+    result = sprun(
+        f"scp {file} {ctrl_user}@{ctrl_addr}:{to}",
         shell=True,
         stderr=PIPE,
         stdout=PIPE,

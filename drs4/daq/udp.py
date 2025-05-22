@@ -25,7 +25,7 @@ from typing import Optional, Union, get_args
 # dependencies
 import xarray as xr
 from tqdm import tqdm
-from ..cal.dsbs import gain
+from ..cal.dsbs import set_gain
 from ..ctrl.self import run
 from ..specs.common import (
     ENV_CTRL_ADDR,
@@ -152,21 +152,19 @@ def auto(
         raise FileExistsError(zarr_if2)
 
     if settings:
-        gain(
+        set_gain(
             gain_if1,
             chassis=chassis,
             interface=1,
-            apply=False,
             zeros=True if gain_if1 is None else False,
             ctrl_addr=ctrl_addr,
             ctrl_user=ctrl_user,
             timeout=timeout,
         )
-        gain(
+        set_gain(
             gain_if2,
             chassis=chassis,
             interface=2,
-            apply=False,
             zeros=True if gain_if2 is None else False,
             ctrl_addr=ctrl_addr,
             ctrl_user=ctrl_user,
@@ -176,11 +174,9 @@ def auto(
             # for interface 1
             f"./set_intg_time.py --In 1 --It {integ_time // 100}",
             f"./set_mode.py --In 1 -m {dsp_mode}",
-            "./set_coef_tbl.py --In 1",
             # for interface 2
             f"./set_intg_time.py --In 3 --It {integ_time // 100}",
             f"./set_mode.py --In 3 -m {dsp_mode}",
-            "./set_coef_tbl.py --In 3",
             chassis=chassis,
             timeout=timeout,
         )
