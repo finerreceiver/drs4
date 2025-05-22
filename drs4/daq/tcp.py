@@ -12,7 +12,7 @@ from typing import Optional, Union, get_args
 # dependencies
 import xarray as xr
 from tqdm import tqdm
-from ..cal.dsbs import gain
+from ..cal.dsbs import set_gain
 from ..ctrl.self import run
 from ..specs.common import (
     CHAN_TOTAL,
@@ -118,7 +118,7 @@ def cross(
         raise FileExistsError(zarr_if2)
 
     if settings:
-        gain(
+        set_gain(
             gain_if1,
             chassis=chassis,
             interface=1,
@@ -127,7 +127,7 @@ def cross(
             ctrl_user=ctrl_user,
             timeout=timeout,
         )
-        gain(
+        set_gain(
             gain_if2,
             chassis=chassis,
             interface=2,

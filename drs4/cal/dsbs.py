@@ -1,4 +1,4 @@
-__all__ = ["gain"]
+__all__ = ["set_gain"]
 
 
 # standard library
@@ -19,7 +19,7 @@ LOGGER = getLogger(__name__)
 PATH_COEF_TABLE = "~/DRS4/mrdsppy/coef_table/new_coef_table.csv"
 
 
-def gain(
+def set_gain(
     ms: Optional[Union[xr.Dataset, StrPath]] = None,
     /,
     *,
@@ -56,7 +56,7 @@ def gain(
     """
     if chassis is None:
         for chassis in get_args(Chassis):
-            gain(
+            set_gain(
                 ms,
                 chassis=chassis,
                 interface=interface,
@@ -72,7 +72,7 @@ def gain(
 
     if interface is None:
         for interface in get_args(Interface):
-            gain(
+            set_gain(
                 ms,
                 chassis=chassis,
                 interface=interface,
