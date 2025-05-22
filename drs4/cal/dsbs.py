@@ -3,13 +3,12 @@ __all__ = ["gain"]
 
 # standard library
 from logging import getLogger
-from subprocess import PIPE, run as sprun
 from typing import Optional, Union, get_args
 
 
 # dependencies
 import xarray as xr
-from ..ctrl.self import run
+from ..ctrl.self import run, send
 from ..specs.common import Chassis, Interface
 from ..specs.gain import GAIN_ONES, GAIN_ZEROS, open_gain, to_dataframe
 from ..utils import StrPath, is_strpath, set_workdir
@@ -114,12 +113,12 @@ def gain(
     with set_workdir(workdir) as workdir:
         to_dataframe(ds).to_csv(csv := workdir / "coef_table.csv")
 
-        result = sprun(
-            f"scp {csv} {ctrl_user}@{ctrl_addr}:{PATH_COEF_TABLE}",
-            shell=True,
-            stderr=PIPE,
-            stdout=PIPE,
-            text=True,
+        result = send(
+            csv,
+            PATH_COEF_TABLE,
+            chassis=chassis,
+            ctrl_addr=ctrl_addr,
+            ctrl_user=ctrl_user,
             timeout=timeout,
         )
         result.check_returncode()
