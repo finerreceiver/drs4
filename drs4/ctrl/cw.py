@@ -169,6 +169,7 @@ def status(
         sg_port = int(getenv(ENV_SG_PORT, ""))
 
     LOGGER.info("(")
+
     for key, val in locals().items():
         LOGGER.info(f"  {key}: {val!r}")
 
