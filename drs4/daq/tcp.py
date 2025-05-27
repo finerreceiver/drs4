@@ -174,10 +174,12 @@ def cross(
                 result = run(
                     # for interface 1
                     f"./get_corr_rslt.py --In 1",
+                    "sleep 1",
                     f"cat {CSV_AUTOS}",
                     f"cat {CSV_CROSS}",
                     # for interface 2
                     f"./get_corr_rslt.py --In 3",
+                    "sleep 1",
                     f"cat {CSV_AUTOS}",
                     f"cat {CSV_CROSS}",
                     chassis=chassis,
