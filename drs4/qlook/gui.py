@@ -112,22 +112,22 @@ def run(
                 ax.set_yticks([])
                 ax.set_xticks([])
 
-    try:
-        plot(-1)
-        fig.tight_layout()
+        try:
+            plot(-1)
+            fig.tight_layout()
 
-        animation = FuncAnimation(  # type: ignore
-            fig=fig,
-            func=plot,  # type: ignore
-            interval=interval * 1000,  # ms
-            blit=False,
-            cache_frame_data=False,
-        )
-        plt.show()
-    except KeyboardInterrupt:
-        LOGGER.warning("Plotting interrupted by user.")
-    finally:
-        plt.close()
+            animation = FuncAnimation(  # type: ignore
+                fig=fig,
+                func=plot,  # type: ignore
+                interval=interval * 1000,  # ms
+                blit=False,
+                cache_frame_data=False,
+            )
+            plt.show()
+        except KeyboardInterrupt:
+            LOGGER.warning("Plotting interrupted by user.")
+        finally:
+            plt.close()
 
 
 def mtime(file: StrPath, /) -> str:
