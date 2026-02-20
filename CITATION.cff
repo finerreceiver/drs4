@@ -1,0 +1,31 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: DRS4
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Akio
+    family-names: Taniguchi
+    email: a-taniguchi@mail.kitami-it.ac.jp
+    affiliation: Kitami Institute of Technology
+    orcid: 'https://orcid.org/0000-0002-9695-6183'
+repository-code: 'https://github.com/finerreceiver/drs4'
+url: 'https://finerreceiver.github.io/drs4'
+abstract: Control and data acquisition software for FINER/DRS4
+keywords:
+  - astronomy
+  - drs4
+  - finer
+  - lmt
+  - millimeter
+  - python
+  - radio-astronomy
+  - single-dish
+  - submillimeter
+license: MIT
+version: 0.1.0
+date-released: '2026-02-20'
