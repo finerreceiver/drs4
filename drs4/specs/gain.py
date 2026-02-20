@@ -5,7 +5,6 @@ __all__ = ["GAIN_ONES", "GAIN_ZEROS", "Gain", "open_gain"]
 from dataclasses import dataclass, field
 from typing import Literal as L, Union, overload
 
-
 # dependencies
 import numpy as np
 import pandas as pd

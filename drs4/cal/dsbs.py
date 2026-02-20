@@ -5,14 +5,12 @@ __all__ = ["set_gain"]
 from logging import getLogger
 from typing import Optional, Union, get_args
 
-
 # dependencies
 import xarray as xr
 from ..ctrl.self import run, send
 from ..specs.common import Chassis, Interface
 from ..specs.gain import GAIN_ONES, GAIN_ZEROS, open_gain, to_dataframe
 from ..utils import StrPath, is_strpath, set_workdir
-
 
 # constants
 LOGGER = getLogger(__name__)

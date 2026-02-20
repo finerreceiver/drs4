@@ -8,7 +8,6 @@ from os import getenv
 from pathlib import Path
 from typing import Optional, Union, get_args
 
-
 # dependencies
 import xarray as xr
 from tqdm import tqdm
@@ -34,7 +33,6 @@ from ..specs.common import (
 from ..specs.ms import open_csvs
 from ..specs.csv import TIME_FORMAT
 from ..utils import StrPath, XarrayJoin, set_workdir, unique
-
 
 # constants
 CSV_AUTOS = "~/DRS4/mrdsppy/output/new_pow.csv"

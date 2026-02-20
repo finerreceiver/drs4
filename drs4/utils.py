@@ -11,12 +11,10 @@ from tempfile import TemporaryDirectory
 from time import gmtime
 from typing import Any, Literal as L, Optional, Union
 
-
 # dependencies
 import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import TypeGuard
-
 
 # constants
 LOGGER = getLogger(__name__)

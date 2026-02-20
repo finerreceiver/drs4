@@ -45,11 +45,9 @@ __all__ = [
 from dataclasses import dataclass
 from typing import Literal as L
 
-
 # dependencies
 import numpy as np
 from xarray_dataclasses import Attr, Data
-
 
 # type hints
 Channel = int

@@ -10,14 +10,12 @@ from pathlib import Path
 from subprocess import PIPE, run as sprun
 from typing import Optional
 
-
 # dependencies
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from PIL import Image
 from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER, Chassis
 from ..utils import StrPath, set_workdir
-
 
 # constants
 IMAGE_DIR = "~/DRS4"

@@ -4,7 +4,6 @@ __all__ = ["CSVAutos", "CSVCross", "open_csv_autos", "open_csv_cross"]
 # standard library
 from dataclasses import dataclass, field
 
-
 # dependencies
 import numpy as np
 import pandas as pd
@@ -12,7 +11,6 @@ import xarray as xr
 from xarray_dataclasses import AsDataset, Attr, Coordof, Dataof
 from .common import Time, Chan, AutoUSB, AutoLSB, Cross2SB
 from ..utils import StrPath
-
 
 # constants
 COL_TIME = "time"
