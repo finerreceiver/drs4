@@ -1,14 +1,14 @@
 [project]
 name = "drs4"
 version = "0.1.0"
-description = "Control and data acquisition for DRS4"
+description = "Control and data acquisition software for FINER/DRS4"
 readme = "README.md"
 keywords = [
     "astronomy",
     "drs4",
     "finer",
-    "millimeter",
     "lmt",
+    "millimeter",
     "python",
     "radio-astronomy",
     "single-dish",
