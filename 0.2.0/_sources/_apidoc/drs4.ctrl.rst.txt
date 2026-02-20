@@ -1,0 +1,17 @@
+drs4.ctrl package
+=================
+
+.. automodule:: drs4.ctrl
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.ctrl.cw
+   drs4.ctrl.scpi
+   drs4.ctrl.self
