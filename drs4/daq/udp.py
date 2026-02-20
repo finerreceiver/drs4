@@ -272,14 +272,34 @@ def auto(
             ds_if2 = ds_if2.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
 
         if zarr_if1.exists() and append:
-            ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")
+            ds_if1.to_zarr(
+                zarr_if1,
+                mode="a",
+                zarr_format=2,
+                append_dim="time",
+            )
         else:
-            ds_if1.to_zarr(zarr_if1, mode="w", encoding={"time": {"units": TIME_UNITS}})
+            ds_if1.to_zarr(
+                zarr_if1,
+                mode="w",
+                zarr_format=2,
+                encoding={"time": {"units": TIME_UNITS}},
+            )
 
         if zarr_if2.exists() and append:
-            ds_if2.to_zarr(zarr_if2, mode="a", append_dim="time")
+            ds_if2.to_zarr(
+                zarr_if2,
+                mode="a",
+                zarr_format=2,
+                append_dim="time",
+            )
         else:
-            ds_if2.to_zarr(zarr_if2, mode="w", encoding={"time": {"units": TIME_UNITS}})
+            ds_if2.to_zarr(
+                zarr_if2,
+                mode="w",
+                zarr_format=2,
+                encoding={"time": {"units": TIME_UNITS}},
+            )
 
         return zarr_if1.resolve(), zarr_if2.resolve()
 
