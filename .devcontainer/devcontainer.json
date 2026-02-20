@@ -1,28 +1,27 @@
 {
     "name": "drs4",
-    "image": "python:3.12",
-    "containerEnv": {
-        "POETRY_VIRTUALENVS_CREATE": "false"
-    },
+    "image": "ghcr.io/astral-sh/uv:python3.12-bookworm",
     "runArgs": [
         "--name=drs4"
     ],
-    "postCreateCommand": "pip install poetry==1.8.4 && poetry install",
+    "containerEnv": {
+        "UV_PROJECT_ENVIRONMENT": "/usr/local"
+    },
+    "postCreateCommand": "uv sync --frozen",
     "customizations": {
         "vscode": {
             "extensions": [
-                "github.vscode-pull-request-github",
                 "ms-python.black-formatter",
-                "ms-python.python"
+                "ms-python.python",
+                "streetsidesoftware.code-spell-checker",
+                "tamasfe.even-better-toml"
             ],
             "settings": {
-                "files.insertFinalNewline": true,
-                "files.trimTrailingWhitespace": true,
-                "python.analysis.autoImportCompletions": true,
+                "black-formatter.importStrategy": "fromEnvironment",
                 "python.languageServer": "Pylance",
                 "[python]": {
                     "editor.defaultFormatter": "ms-python.black-formatter",
-                    "editor.formatOnSave": true,
+                    "editor.formatOnSave": true
                 }
             }
         }
