@@ -273,31 +273,27 @@ def auto(
 
         if zarr_if1.exists() and append:
             ds_if1.to_zarr(
-                zarr_if1,
+                zarr_if1,  # type: ignore
                 mode="a",
-                zarr_format=2,
                 append_dim="time",
             )
         else:
             ds_if1.to_zarr(
-                zarr_if1,
+                zarr_if1,  # type: ignore
                 mode="w",
-                zarr_format=2,
                 encoding={"time": {"units": TIME_UNITS}},
             )
 
         if zarr_if2.exists() and append:
             ds_if2.to_zarr(
-                zarr_if2,
+                zarr_if2,  # type: ignore
                 mode="a",
-                zarr_format=2,
                 append_dim="time",
             )
         else:
             ds_if2.to_zarr(
-                zarr_if2,
+                zarr_if2,  # type: ignore
                 mode="w",
-                zarr_format=2,
                 encoding={"time": {"units": TIME_UNITS}},
             )
 
