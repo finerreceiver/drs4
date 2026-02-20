@@ -1,0 +1,27 @@
+drs4 package
+============
+
+.. automodule:: drs4
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.cal
+   drs4.ctrl
+   drs4.daq
+   drs4.qlook
+   drs4.specs
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.utils

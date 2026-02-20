@@ -1,0 +1,7 @@
+drs4.daq.tcp module
+===================
+
+.. automodule:: drs4.daq.tcp
+   :members:
+   :show-inheritance:
+   :undoc-members:

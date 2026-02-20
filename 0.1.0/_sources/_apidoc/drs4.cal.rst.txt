@@ -1,0 +1,15 @@
+drs4.cal package
+================
+
+.. automodule:: drs4.cal
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.cal.dsbs
