@@ -1,6 +1,6 @@
 [project]
 name = "drs4"
-version = "0.1.0"
+version = "0.2.0"
 description = "Control and data acquisition software for FINER/DRS4"
 readme = "README.md"
 keywords = [
