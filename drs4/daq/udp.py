@@ -21,7 +21,6 @@ from threading import Event
 from time import sleep
 from typing import Optional, Union, get_args
 
-
 # dependencies
 import xarray as xr
 from tqdm import tqdm
@@ -50,7 +49,6 @@ from ..specs.common import (
 from ..specs.ms import open_vdifs
 from ..specs.vdif import VDIF_FRAME_BYTES
 from ..utils import StrPath, XarrayJoin, set_workdir, unique
-
 
 # constants
 GROUP = "239.0.0.1"

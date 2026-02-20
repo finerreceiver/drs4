@@ -6,10 +6,8 @@ from logging import getLogger
 from socket import socket, AF_INET, SOCK_STREAM
 from typing import IO, Optional, Sequence, Union
 
-
 # dependencies
 from ..utils import StrPath
-
 
 # constants
 DEFAULT_AUTORECV: bool = True

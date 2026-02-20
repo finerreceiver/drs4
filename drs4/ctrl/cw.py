@@ -6,7 +6,6 @@ from logging import getLogger
 from os import getenv
 from typing import Optional
 
-
 # constants
 LOGGER = getLogger(__name__)
 

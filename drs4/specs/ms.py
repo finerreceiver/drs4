@@ -5,7 +5,6 @@ __all__ = ["MS", "open_csvs", "open_vdifs"]
 from dataclasses import dataclass, field
 from typing import Literal as L, Optional, get_args
 
-
 # dependencies
 import numpy as np
 import xarray as xr

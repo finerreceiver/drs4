@@ -5,7 +5,6 @@ __all__ = ["VDIF", "open_vdif"]
 from dataclasses import dataclass, field
 from typing import Literal as L, Optional, get_args
 
-
 # dependencies
 import numpy as np
 import xarray as xr
@@ -13,7 +12,6 @@ from numpy.typing import NDArray
 from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
 from .common import Chan, IntegTime, Time
 from ..utils import StrPath, XarrayJoin
-
 
 # constants
 CHAN_FIRST_HALF = np.arange(0, 256)
