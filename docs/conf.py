@@ -18,6 +18,6 @@ html_theme_options = {
     ],
     "switcher": {
         "json_url": "https://finerreceiver.github.io/drs4/_static/switcher.json",
-        "version_match": "0.3.0",
+        "version_match": "0.4.0",
     },
 }

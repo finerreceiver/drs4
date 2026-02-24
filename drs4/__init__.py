@@ -1,16 +1,12 @@
-__all__ = ["ctrl", "daq", "qlook", "specs", "utils"]
-__version__ = "0.3.0"
+__all__ = ["ctrl", "daq", "qlook", "obs", "specs", "utils"]
+__version__ = "0.4.0"
 
 
 # standard library
 from logging import getLogger
 
 # dependencies
-from . import ctrl
-from . import daq
-from . import qlook
-from . import specs
-from . import utils
+from . import ctrl, daq, qlook, obs, specs, utils
 
 # constants
 LOGGER = getLogger(__name__)
