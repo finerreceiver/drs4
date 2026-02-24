@@ -1,5 +1,5 @@
 __all__ = ["ctrl", "daq", "qlook", "obs", "specs", "utils"]
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 
 # standard library
