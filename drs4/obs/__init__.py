@@ -1,5 +1,8 @@
-__all__ = ["cal", "sci"]
+__all__ = ["cal", "sci", "yfactor"]
 
-# dependencies
+# submodules
 from . import cal
 from . import sci
+
+# aliases
+from .cal import yfactor
