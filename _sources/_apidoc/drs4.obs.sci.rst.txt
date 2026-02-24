@@ -1,0 +1,7 @@
+drs4.obs.sci module
+===================
+
+.. automodule:: drs4.obs.sci
+   :members:
+   :show-inheritance:
+   :undoc-members:
