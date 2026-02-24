@@ -15,9 +15,9 @@ from ..utils import StrPath
 COLOR_HOT = "#b7282e"  # https://www.colordic.org/colorsample/2009
 COLOR_COLD = "#1e50a2"  # https://www.colordic.org/colorsample/2069
 COLOR_OTHER = "#4f455c"  # https://www.colordic.org/colorsample/2295
-BINARY_POINT = 15.0
-INTNUM = 2000000.0
-NFFT = 1024.0
+DRS4_BINARY_POINT = 15
+DRS4_INTNUM = 2000000
+DRS4_NFFT = 1024
 
 
 def yfactor(
@@ -60,22 +60,22 @@ def yfactor(
 
     ax = axes[0, 0]
     (
-        to_dB(if1_hot["auto_lsb"].mean("time"))
+        to_dB(if1_hot["auto_lsb"].mean("time"), if1_hot.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_HOT, label="Hot")
     )
     (
-        to_dB(if1_cold["auto_lsb"].mean("time"))
+        to_dB(if1_cold["auto_lsb"].mean("time"), if1_cold.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_COLD, label="Cold")
     )
     (
-        to_dB(if2_hot["auto_lsb"].mean("time"))
+        to_dB(if2_hot["auto_lsb"].mean("time"), if2_hot.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_HOT)
     )
     (
-        to_dB(if2_cold["auto_lsb"].mean("time"))
+        to_dB(if2_cold["auto_lsb"].mean("time"), if2_cold.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_COLD)
     )
@@ -84,22 +84,22 @@ def yfactor(
 
     ax = axes[0, 1]
     (
-        to_dB(if1_hot["auto_usb"].mean("time"))
+        to_dB(if1_hot["auto_usb"].mean("time"), if1_hot.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_HOT, label="Hot")
     )
     (
-        to_dB(if1_cold["auto_usb"].mean("time"))
+        to_dB(if1_cold["auto_usb"].mean("time"), if1_cold.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_COLD, label="Cold")
     )
     (
-        to_dB(if2_hot["auto_usb"].mean("time"))
+        to_dB(if2_hot["auto_usb"].mean("time"), if2_hot.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_HOT)
     )
     (
-        to_dB(if2_cold["auto_usb"].mean("time"))
+        to_dB(if2_cold["auto_usb"].mean("time"), if2_cold.integ_time)
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_COLD)
     )
@@ -115,16 +115,16 @@ def yfactor(
     ax = axes[1, 0]
     (
         (
-            to_dB(if1_hot["auto_lsb"].mean("time"))
-            - to_dB(if1_cold["auto_lsb"].mean("time"))
+            to_dB(if1_hot["auto_lsb"].mean("time"), if1_hot.integ_time)
+            - to_dB(if1_cold["auto_lsb"].mean("time"), if1_cold.integ_time)
         )
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_OTHER)
     )
     (
         (
-            to_dB(if2_hot["auto_lsb"].mean("time"))
-            - to_dB(if2_cold["auto_lsb"].mean("time"))
+            to_dB(if2_hot["auto_lsb"].mean("time"), if2_hot.integ_time)
+            - to_dB(if2_cold["auto_lsb"].mean("time"), if2_cold.integ_time)
         )
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_OTHER)
@@ -134,16 +134,16 @@ def yfactor(
     ax = axes[1, 1]
     (
         (
-            to_dB(if1_hot["auto_usb"].mean("time"))
-            - to_dB(if1_cold["auto_usb"].mean("time"))
+            to_dB(if1_hot["auto_usb"].mean("time"), if1_hot.integ_time)
+            - to_dB(if1_cold["auto_usb"].mean("time"), if1_cold.integ_time)
         )
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_OTHER)
     )
     (
         (
-            to_dB(if2_hot["auto_usb"].mean("time"))
-            - to_dB(if2_cold["auto_usb"].mean("time"))
+            to_dB(if2_hot["auto_usb"].mean("time"), if2_hot.integ_time)
+            - to_dB(if2_cold["auto_usb"].mean("time"), if2_cold.integ_time)
         )
         .swap_dims(chan="freq")
         .plot.step(ax=ax, color=COLOR_OTHER)
@@ -160,6 +160,12 @@ def yfactor(
     return path.resolve()
 
 
-def to_dB(da: xr.DataArray) -> xr.DataArray:
+def to_dB(da: xr.DataArray, integ_time: int, /) -> xr.DataArray:
     """Convert power scale to dB scale."""
-    return 10 * np.log10((da + 2 ** (-40)) * 2**BINARY_POINT / INTNUM / NFFT**2)
+    return 10 * np.log10(
+        (da + 2**-40)
+        * 2**DRS4_BINARY_POINT
+        / DRS4_INTNUM
+        / DRS4_NFFT**2
+        / int(integ_time / 100)
+    )
