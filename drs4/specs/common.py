@@ -63,7 +63,7 @@ SideBand = L["USB", "LSB"]
 CHAN_TOTAL = 512  # ch
 FREQ_INTERVAL = 0.02  # GHz
 FREQ_INNER = FREQ_INTERVAL * np.arange(CHAN_TOTAL * 0, CHAN_TOTAL * 1)  # GHz
-FREQ_OUTER = FREQ_INTERVAL * np.arange(CHAN_TOTAL * 1, CHAN_TOTAL * 2)  # GHz
+FREQ_OUTER = FREQ_INTERVAL * (np.arange(CHAN_TOTAL * 1, CHAN_TOTAL * 2) + 1)  # GHz
 
 
 # constants (file formats)
