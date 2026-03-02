@@ -3,7 +3,7 @@ __all__ = ["GAIN_ONES", "GAIN_ZEROS", "Gain", "open_gain"]
 
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L, Union, overload
+from typing import Literal as L, overload
 
 # dependencies
 import numpy as np
@@ -78,7 +78,7 @@ def open_gain(
     /,
     *,
     format: L["DataFrame", "Dataset"] = "Dataset",
-) -> Union[pd.DataFrame, xr.Dataset]:
+) -> pd.DataFrame | xr.Dataset:
     """Open gain file (DRS4 MS file) as a DataFrame or a Dataset.
 
     Args:

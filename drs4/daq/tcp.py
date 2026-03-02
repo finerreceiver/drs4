@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from logging import getLogger
 from os import getenv
 from pathlib import Path
-from typing import Optional, Union, get_args
+from typing import get_args
 
 # dependencies
 import xarray as xr
@@ -50,27 +50,27 @@ def cross(
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 100,
-    signal_if: Optional[Interface] = None,
-    signal_sb: Optional[SideBand] = None,
-    signal_chan: Optional[Channel] = None,
+    signal_if: Interface | None = None,
+    signal_sb: SideBand | None = None,
+    signal_chan: Channel | None = None,
     # for file saving (optional)
     append: bool = False,
     integrate: bool = False,
     join: XarrayJoin = "inner",
     overwrite: bool = False,
     progress: bool = False,
-    workdir: Optional[StrPath] = None,
-    zarr_if1: Optional[StrPath] = None,
-    zarr_if2: Optional[StrPath] = None,
+    workdir: StrPath | None = None,
+    zarr_if1: StrPath | None = None,
+    zarr_if2: StrPath | None = None,
     # for DRS4 settings (optional)
     dsp_mode: DSPMode = "IQ",
-    gain_if1: Optional[Union[xr.Dataset, StrPath]] = None,
-    gain_if2: Optional[Union[xr.Dataset, StrPath]] = None,
+    gain_if1: xr.Dataset | StrPath | None = None,
+    gain_if2: xr.Dataset | StrPath | None = None,
     settings: bool = True,
     # for connection (optional)
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
 ) -> tuple[Path, Path]:
     """"""
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)

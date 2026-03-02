@@ -4,7 +4,7 @@ __all__ = ["connect", "send_commands", "send_commands_in"]
 # standard library
 from logging import getLogger
 from socket import socket, AF_INET, SOCK_STREAM
-from typing import IO, Optional, Sequence, Union
+from typing import IO, Sequence
 
 # dependencies
 from ..utils import StrPath
@@ -15,7 +15,7 @@ DEFAULT_BUFSIZE: int = 4096
 DEFAULT_ENCODING: str = "ascii"
 DEFAULT_END: str = "\n"
 DEFAULT_FLAGS: int = 0
-DEFAULT_TIMEOUT: Optional[float] = None
+DEFAULT_TIMEOUT: float | None = None
 LOGGER = getLogger(__name__)
 
 
@@ -54,7 +54,7 @@ class CustomSocket(socket):
 
 
 def connect(
-    host: str, port: int, timeout: Optional[float] = DEFAULT_TIMEOUT
+    host: str, port: int, timeout: float | None = DEFAULT_TIMEOUT
 ) -> CustomSocket:
     """Connect to an SCPI server and returns a custom socket object.
 
@@ -94,10 +94,10 @@ def connect(
 
 
 def send_commands(
-    commands: Union[IO[str], Sequence[str], str],
+    commands: IO[str] | Sequence[str] | str,
     host: str,
     port: int,
-    timeout: Optional[float] = DEFAULT_TIMEOUT,
+    timeout: float | None = DEFAULT_TIMEOUT,
     encoding: str = DEFAULT_ENCODING,
     autorecv: bool = DEFAULT_AUTORECV,
     bufsize: int = DEFAULT_BUFSIZE,
@@ -152,7 +152,7 @@ def send_commands_in(
     path: StrPath,
     host: str,
     port: int,
-    timeout: Optional[float] = DEFAULT_TIMEOUT,
+    timeout: float | None = DEFAULT_TIMEOUT,
     encoding: str = DEFAULT_ENCODING,
     autorecv: bool = DEFAULT_AUTORECV,
     bufsize: int = DEFAULT_BUFSIZE,

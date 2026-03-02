@@ -3,7 +3,7 @@ __all__ = ["set_gain"]
 
 # standard library
 from logging import getLogger
-from typing import Optional, Union, get_args
+from typing import get_args
 
 # dependencies
 import xarray as xr
@@ -18,19 +18,19 @@ PATH_COEF_TABLE = "~/DRS4/mrdsppy/coef_table/new_coef_table.csv"
 
 
 def set_gain(
-    ms: Optional[Union[xr.Dataset, StrPath]] = None,
+    ms: xr.Dataset | StrPath | None = None,
     /,
     *,
     # for measurement (required)
-    chassis: Optional[Chassis] = None,
-    interface: Optional[Interface] = None,
+    chassis: Chassis | None = None,
+    interface: Interface | None = None,
     ones: bool = False,
     zeros: bool = False,
     # for connection (optional)
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
-    workdir: Optional[StrPath] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
+    workdir: StrPath | None = None,
 ) -> None:
     """Set a gain file (DRS4 MS file) to DRS4.
 

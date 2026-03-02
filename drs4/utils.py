@@ -9,7 +9,7 @@ from os import PathLike
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import gmtime
-from typing import Any, Literal as L, Optional, Union
+from typing import Any, Literal as L
 
 # dependencies
 import numpy as np
@@ -21,8 +21,8 @@ LOGGER = getLogger(__name__)
 
 
 # type hints
-Axis = Optional[Union[Sequence[int], int]]
-StrPath = Union[PathLike[str], str]
+Axis = Sequence[int] | int | None
+StrPath = PathLike[str] | str
 XarrayJoin = L["outer", "inner", "left", "right", "exact", "override"]
 
 
@@ -32,7 +32,7 @@ def is_strpath(obj: Any, /) -> TypeGuard[StrPath]:
 
 
 @contextmanager
-def set_workdir(workdir: Optional[StrPath] = None, /) -> Iterator[Path]:
+def set_workdir(workdir: StrPath | None = None, /) -> Iterator[Path]:
     """Set the working directory for output VDIF files."""
     if workdir is not None:
         yield Path(workdir).expanduser()
