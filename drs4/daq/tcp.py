@@ -20,7 +20,7 @@ from ..specs.common import (
     ENV_CTRL_ADDR,
     ENV_CTRL_USER,
     OBSID_FORMAT,
-    TIME_UNITS,
+    ZARR_ENCODING,
     ZARR_FORMAT,
     Channel,
     Chassis,
@@ -261,7 +261,7 @@ def cross(
             ds_if1.to_zarr(
                 zarr_if1,  # type: ignore
                 mode="w",
-                encoding={"time": {"units": TIME_UNITS}},
+                encoding=ZARR_ENCODING,
             )
 
         if zarr_if2.exists() and append:
@@ -274,7 +274,7 @@ def cross(
             ds_if2.to_zarr(
                 zarr_if2,  # type: ignore
                 mode="w",
-                encoding={"time": {"units": TIME_UNITS}},
+                encoding=ZARR_ENCODING,
             )
 
         return zarr_if1.resolve(), zarr_if2.resolve()
