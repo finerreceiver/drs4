@@ -3,7 +3,7 @@ __all__ = ["VDIF", "open_vdif"]
 
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L, Optional, get_args
+from typing import Literal as L, get_args
 
 # dependencies
 import numpy as np
@@ -72,7 +72,7 @@ def open_vdif(
     /,
     *,
     # for measurement (optional)
-    integ_time: Optional[IntegTime] = None,
+    integ_time: IntegTime | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.DataArray:

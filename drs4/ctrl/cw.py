@@ -4,7 +4,6 @@ __all__ = ["on", "off", "status"]
 # standard library
 from logging import getLogger
 from os import getenv
-from typing import Optional
 
 # constants
 LOGGER = getLogger(__name__)
@@ -33,13 +32,13 @@ def on(
     signal_sb: SideBand,
     signal_chan: Channel,
     # for measurement (optional)
-    lo_freq: Optional[float] = None,
-    lo_mult: Optional[int] = None,
-    sg_ampl: Optional[float] = None,
+    lo_freq: float | None = None,
+    lo_mult: int | None = None,
+    sg_ampl: float | None = None,
     # for connection (optional)
-    sg_host: Optional[str] = None,
-    sg_port: Optional[int] = None,
-    timeout: Optional[float] = None,
+    sg_host: str | None = None,
+    sg_port: int | None = None,
+    timeout: float | None = None,
 ) -> None:
     """Start outputting the CW signal after setting the SG amplitude and frequency.
 
@@ -109,9 +108,9 @@ def on(
 def off(
     *,
     # for connection (optional)
-    sg_host: Optional[str] = None,
-    sg_port: Optional[int] = None,
-    timeout: Optional[float] = None,
+    sg_host: str | None = None,
+    sg_port: int | None = None,
+    timeout: float | None = None,
 ) -> None:
     """Stop outputting the CW signal.
 
@@ -147,9 +146,9 @@ def off(
 def status(
     *,
     # for connection (optional)
-    sg_host: Optional[str] = None,
-    sg_port: Optional[int] = None,
-    timeout: Optional[float] = None,
+    sg_host: str | None = None,
+    sg_port: int | None = None,
+    timeout: float | None = None,
 ) -> None:
     """Show the status of CW signal in the logger.
 

@@ -5,7 +5,7 @@ __all__ = ["run", "send"]
 from logging import getLogger
 from os import getenv
 from subprocess import PIPE, CompletedProcess, run as sprun
-from typing import Optional, Union, overload
+from typing import overload
 
 # dependencies
 from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER, Chassis
@@ -24,9 +24,9 @@ PATH_CMD_DIR = "~/DRS4/cmd"
 def run(
     *commands: str,
     chassis: Chassis,
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
 ) -> StrCP: ...
 
@@ -35,9 +35,9 @@ def run(
 def run(
     *commands: str,
     chassis: None = None,
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
 ) -> tuple[StrCP, StrCP]: ...
 
@@ -46,12 +46,12 @@ def run(
     # for connection (required)
     *commands: str,
     # for connection (optional)
-    chassis: Optional[Chassis] = None,
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    chassis: Chassis | None = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
-) -> Union[StrCP, tuple[StrCP, StrCP]]:
+) -> StrCP | tuple[StrCP, StrCP]:
     """Run commands in DRS4.
 
     Args:
@@ -140,9 +140,9 @@ def send(
     /,
     *,
     chassis: Chassis,
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
 ) -> StrCP: ...
 
 
@@ -153,9 +153,9 @@ def send(
     /,
     *,
     chassis: None = None,
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
 ) -> tuple[StrCP, StrCP]: ...
 
 
@@ -166,11 +166,11 @@ def send(
     /,
     *,
     # for connection (optional)
-    chassis: Optional[Chassis] = None,
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
-) -> Union[StrCP, tuple[StrCP, StrCP]]:
+    chassis: Chassis | None = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
+) -> StrCP | tuple[StrCP, StrCP]:
     """Send a file to DRS4.
 
     Args:

@@ -8,7 +8,6 @@ from os import getenv
 from os.path import getmtime
 from pathlib import Path
 from subprocess import PIPE, run as sprun
-from typing import Optional
 
 # dependencies
 import matplotlib.pyplot as plt
@@ -33,13 +32,13 @@ def run(
     # for connection (required)
     chassis: Chassis,
     # for connection (optional)
-    ctrl_addr: Optional[str] = None,
-    ctrl_user: Optional[str] = None,
-    timeout: Optional[float] = None,
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
+    timeout: float | None = None,
     # for plotting (optional)
-    figsize: Optional[tuple[int, int]] = (12, 6),
+    figsize: tuple[int, int] | None = (12, 6),
     interval: int = 10,
-    workdir: Optional[StrPath] = None,
+    workdir: StrPath | None = None,
 ) -> None:
     """Display current auto-spectra and bit distributions of DRS4.
 

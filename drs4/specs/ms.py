@@ -3,7 +3,7 @@ __all__ = ["MS", "open_csvs", "open_vdifs"]
 
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L, Optional, get_args
+from typing import Literal as L, get_args
 
 # dependencies
 import numpy as np
@@ -105,8 +105,8 @@ def open_csvs(
     freq_range: FreqRange,
     integ_time: IntegTime,
     # for measurement (optional)
-    signal_sb: Optional[SideBand] = None,
-    signal_chan: Optional[Channel] = None,
+    signal_sb: SideBand | None = None,
+    signal_chan: Channel | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.Dataset:
@@ -186,9 +186,9 @@ def open_vdifs(
     interface: Interface,
     freq_range: FreqRange,
     # for measurement (optional)
-    integ_time: Optional[IntegTime] = None,
-    signal_sb: Optional[SideBand] = None,
-    signal_chan: Optional[Channel] = None,
+    integ_time: IntegTime | None = None,
+    signal_sb: SideBand | None = None,
+    signal_chan: Channel | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.Dataset:
