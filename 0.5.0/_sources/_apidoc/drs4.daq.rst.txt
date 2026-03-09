@@ -1,0 +1,16 @@
+drs4.daq package
+================
+
+.. automodule:: drs4.daq
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.daq.tcp
+   drs4.daq.udp
