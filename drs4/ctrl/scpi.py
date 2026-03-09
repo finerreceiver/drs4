@@ -54,7 +54,11 @@ class CustomSocket(socket):
 
 
 def connect(
-    host: str, port: int, timeout: float | None = DEFAULT_TIMEOUT
+    host: str,
+    port: int,
+    /,
+    *,
+    timeout: float | None = DEFAULT_TIMEOUT,
 ) -> CustomSocket:
     """Connect to an SCPI server and returns a custom socket object.
 
@@ -89,19 +93,20 @@ def connect(
     sock = CustomSocket(AF_INET, SOCK_STREAM)
     sock.settimeout(timeout)
     sock.connect((host, port))
-
     return sock
 
 
 def send_commands(
     commands: IO[str] | Sequence[str] | str,
+    /,
+    *,
     host: str,
     port: int,
     timeout: float | None = DEFAULT_TIMEOUT,
     encoding: str = DEFAULT_ENCODING,
     autorecv: bool = DEFAULT_AUTORECV,
     bufsize: int = DEFAULT_BUFSIZE,
-) -> None:
+) -> tuple[str, ...]:
     """Send SCPI command(s) to a server.
 
     Args:
@@ -115,7 +120,7 @@ def send_commands(
         bufsize: Maximum byte size for receiving a message.
 
     Returns:
-        This function returns nothing.
+        Tuple of the received messages.
 
     Examples:
         To send an SCPI command to the server::
@@ -137,7 +142,9 @@ def send_commands(
     if isinstance(commands, str):
         commands = (commands,)
 
-    with connect(host, port, timeout) as sock:
+    with connect(host, port, timeout=timeout) as sock:
+        messages: list[str] = []
+
         for command in commands:
             if not command or command.startswith("#"):
                 continue
@@ -145,18 +152,22 @@ def send_commands(
             sock.send(command.strip(), encoding=encoding)
 
             if autorecv and command.endswith("?"):
-                sock.recv(bufsize)
+                messages.append(sock.recv(bufsize))
+
+        return tuple(messages)
 
 
 def send_commands_in(
     path: StrPath,
+    /,
+    *,
     host: str,
     port: int,
     timeout: float | None = DEFAULT_TIMEOUT,
     encoding: str = DEFAULT_ENCODING,
     autorecv: bool = DEFAULT_AUTORECV,
     bufsize: int = DEFAULT_BUFSIZE,
-) -> None:
+) -> tuple[str, ...]:
     """Send SCPI command(s) written in a file to a server.
 
     Args:
@@ -169,7 +180,7 @@ def send_commands_in(
         bufsize: Maximum byte size for receiving a message.
 
     Returns:
-        This function returns nothing.
+        Tuple of the received messages.
 
     Examples:
         If a text file, commands.txt, has SCPI commands::
@@ -191,4 +202,12 @@ def send_commands_in(
     LOGGER.debug(")")
 
     with open(path, encoding=encoding) as f:
-        send_commands(f, host, port, timeout, encoding, autorecv, bufsize)
+        return send_commands(
+            f,
+            host=host,
+            port=port,
+            timeout=timeout,
+            encoding=encoding,
+            autorecv=autorecv,
+            bufsize=bufsize,
+        )

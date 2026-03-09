@@ -173,9 +173,10 @@ def status(
 
     LOGGER.debug(")")
 
-    send_commands(
+    for message in send_commands(
         ["AMPL?", "FREQ?", "OUTP?"],
         host=sg_host,
         port=sg_port,
         timeout=timeout,
-    )
+    ):
+        LOGGER.info(message)
