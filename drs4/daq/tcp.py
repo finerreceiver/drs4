@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from logging import getLogger
 from os import getenv
 from pathlib import Path
+from time import sleep
 from typing import get_args
 
 # dependencies
@@ -145,6 +146,7 @@ def cross(
             timeout=timeout,
         )
         result.check_returncode()
+        sleep(1.5)
 
     with (
         set_workdir(workdir) as workdir,
