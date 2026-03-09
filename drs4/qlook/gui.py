@@ -63,7 +63,7 @@ def run(
     LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
     LOGGER.debug(")")
 

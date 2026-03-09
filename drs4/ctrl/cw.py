@@ -84,12 +84,12 @@ def on(
     else:
         raise ValueError("Signal sideband must be USB|LSB.")
 
-    LOGGER.info("(")
+    LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
-    LOGGER.info("(")
+    LOGGER.debug(")")
 
     send_commands(
         [
@@ -128,12 +128,12 @@ def off(
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, ""))
 
-    LOGGER.info("(")
+    LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
-    LOGGER.info(")")
+    LOGGER.debug(")")
 
     send_commands(
         "OUTP OFF",
@@ -166,16 +166,17 @@ def status(
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, ""))
 
-    LOGGER.info("(")
+    LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
-    LOGGER.info(")")
+    LOGGER.debug(")")
 
-    send_commands(
+    for message in send_commands(
         ["AMPL?", "FREQ?", "OUTP?"],
         host=sg_host,
         port=sg_port,
         timeout=timeout,
-    )
+    ):
+        LOGGER.info(message)

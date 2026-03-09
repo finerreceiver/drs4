@@ -120,12 +120,12 @@ def auto(
     if zarr_if2 is None:
         zarr_if2 = ZARR_FORMAT.format(obsid, chassis, 2)
 
-    LOGGER.info("(")
+    LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
-    LOGGER.info(")")
+    LOGGER.debug(")")
 
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
@@ -336,7 +336,7 @@ def dump(
         sock.settimeout(timeout)
 
         # start dumping
-        LOGGER.info(f"{prefix} Start dumping data.")
+        LOGGER.debug(f"{prefix} Start dumping data.")
 
         while cancel is None or not cancel.is_set():
             frame, _ = sock.recvfrom(VDIF_FRAME_BYTES)
@@ -348,4 +348,4 @@ def dump(
                 LOGGER.warning(f"{prefix} Truncated frame.")
 
         # finish dumping
-        LOGGER.info(f"{prefix} Finish dumping data.")
+        LOGGER.debug(f"{prefix} Finish dumping data.")
