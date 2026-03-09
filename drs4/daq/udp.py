@@ -179,6 +179,7 @@ def auto(
             timeout=timeout,
         )
         result.check_returncode()
+        sleep(1.5)
 
     with (
         Manager() as manager,
