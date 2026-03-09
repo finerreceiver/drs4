@@ -12,8 +12,7 @@ from typing import get_args
 # dependencies
 import xarray as xr
 from tqdm import tqdm
-from ..cal.dsbs import set_gain
-from ..ctrl.self import run
+from ..ctrl.self import run, set_gain
 from ..specs.common import (
     CHAN_TOTAL,
     CSV_AUTOS_FORMAT,
