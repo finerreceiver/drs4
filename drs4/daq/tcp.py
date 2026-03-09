@@ -87,12 +87,12 @@ def cross(
     if zarr_if2 is None:
         zarr_if2 = ZARR_FORMAT.format(obsid, chassis, 2)
 
-    LOGGER.info("(")
+    LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
-    LOGGER.info(")")
+    LOGGER.debug(")")
 
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")

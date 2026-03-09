@@ -311,12 +311,12 @@ def set_gain(
 
         return
 
-    LOGGER.info("(")
+    LOGGER.debug("(")
 
     for key, val in locals().items():
-        LOGGER.info(f"  {key}: {val!r}")
+        LOGGER.debug(f"  {key}: {val!r}")
 
-    LOGGER.info(")")
+    LOGGER.debug(")")
 
     if chassis not in get_args(Chassis):
         raise ValueError("Chassis number must be 1|2.")
