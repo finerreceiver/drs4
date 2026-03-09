@@ -6,7 +6,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.18709559-cornflowerblue?style=flat-square)](https://doi.org/10.5281/zenodo.18709559)
 [![Tests](https://img.shields.io/github/actions/workflow/status/finerreceiver/drs4/tests.yaml?label=Tests&style=flat-square)](https://github.com/finerreceiver/drs4/actions)
 
-Control and data acquisition for FINER/DRS4
+Control and data acquisition software for FINER/DRS4
 
 ## Installation
 
