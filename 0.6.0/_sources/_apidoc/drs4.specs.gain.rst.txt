@@ -1,0 +1,7 @@
+drs4.specs.gain module
+======================
+
+.. automodule:: drs4.specs.gain
+   :members:
+   :show-inheritance:
+   :undoc-members:

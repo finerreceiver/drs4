@@ -1,0 +1,7 @@
+drs4.ctrl.self module
+=====================
+
+.. automodule:: drs4.ctrl.self
+   :members:
+   :show-inheritance:
+   :undoc-members:
