@@ -3,20 +3,60 @@ __all__ = ["connect", "send_commands", "send_commands_in"]
 
 # standard library
 from logging import getLogger
+from serial import Serial
 from socket import socket, AF_INET, SOCK_STREAM
-from typing import IO, Sequence
+from typing import Any, IO, Sequence, overload
 
 # dependencies
 from ..utils import StrPath
 
 # constants
 DEFAULT_AUTORECV: bool = True
+DEFAULT_BAUDRATE: int = 9600
 DEFAULT_BUFSIZE: int = 4096
 DEFAULT_ENCODING: str = "ascii"
 DEFAULT_END: str = "\n"
 DEFAULT_FLAGS: int = 0
 DEFAULT_TIMEOUT: float | None = None
 LOGGER = getLogger(__name__)
+
+
+class CustomSerial(Serial):
+    """Custom serial class to send/recv string with logging."""
+
+    def send(
+        self,
+        string: str,
+        flags: int = DEFAULT_FLAGS,
+        end: str = DEFAULT_END,
+        encoding: str = DEFAULT_ENCODING,
+    ) -> int:
+        """Same as Serial.write(), but accepts string, not bytes."""
+        encoded = (string + end).encode(encoding)
+
+        if (n_bytes := self.write(encoded)) is None:
+            raise ConnectionError("Unexpected disconnect.")
+
+        LOGGER.debug(f"{self.port} <- {string}")
+        return n_bytes
+
+    def recv(
+        self,
+        bufsize: int = DEFAULT_BUFSIZE,
+        flags: int = DEFAULT_FLAGS,
+        end: str = DEFAULT_END,
+        encoding: str = DEFAULT_ENCODING,
+    ) -> str:
+        """Same as Serial.read_until(), but returns string, not bytes."""
+        bend = end.encode(encoding)
+        received = self.read_until(expected=bend)
+
+        if not received or not received.endswith(bend):
+            raise TimeoutError("Unexpected disconnect.")
+
+        string = received.decode(encoding).removesuffix(end)
+        LOGGER.debug(f"{self.port} -> {string}")
+        return string
 
 
 class CustomSocket(socket):
@@ -63,13 +103,29 @@ class CustomSocket(socket):
         return string
 
 
+@overload
+def connect(
+    host: None,
+    port: str,
+    /,
+    *,
+    timeout: float | None = DEFAULT_TIMEOUT,
+) -> CustomSerial: ...
+@overload
 def connect(
     host: str,
     port: int,
     /,
     *,
     timeout: float | None = DEFAULT_TIMEOUT,
-) -> CustomSocket:
+) -> CustomSocket: ...
+def connect(
+    host: Any,
+    port: Any,
+    /,
+    *,
+    timeout: float | None = DEFAULT_TIMEOUT,
+) -> Any:
     """Connect to an SCPI server and returns a custom socket object.
 
     Args:
@@ -100,18 +156,52 @@ def connect(
 
     LOGGER.debug(")")
 
-    sock = CustomSocket(AF_INET, SOCK_STREAM)
-    sock.settimeout(timeout)
-    sock.connect((host, port))
-    return sock
+    if host is None and isinstance(port, str):
+        return CustomSerial(
+            port,
+            baudrate=DEFAULT_BAUDRATE,
+            timeout=timeout,
+        )
+
+    if host is not None and isinstance(port, int):
+        conn = CustomSocket(AF_INET, SOCK_STREAM)
+        conn.settimeout(timeout)
+        conn.connect((host, port))
+        return conn
+
+    raise ValueError("Invalid host or port.")
 
 
+@overload
+def send_commands(
+    commands: IO[str] | Sequence[str] | str,
+    /,
+    *,
+    host: None,
+    port: str,
+    timeout: float | None = DEFAULT_TIMEOUT,
+    encoding: str = DEFAULT_ENCODING,
+    autorecv: bool = DEFAULT_AUTORECV,
+    bufsize: int = DEFAULT_BUFSIZE,
+) -> tuple[str, ...]: ...
+@overload
 def send_commands(
     commands: IO[str] | Sequence[str] | str,
     /,
     *,
     host: str,
     port: int,
+    timeout: float | None = DEFAULT_TIMEOUT,
+    encoding: str = DEFAULT_ENCODING,
+    autorecv: bool = DEFAULT_AUTORECV,
+    bufsize: int = DEFAULT_BUFSIZE,
+) -> tuple[str, ...]: ...
+def send_commands(
+    commands: IO[str] | Sequence[str] | str,
+    /,
+    *,
+    host: Any,
+    port: Any,
     timeout: float | None = DEFAULT_TIMEOUT,
     encoding: str = DEFAULT_ENCODING,
     autorecv: bool = DEFAULT_AUTORECV,
@@ -152,27 +242,51 @@ def send_commands(
     if isinstance(commands, str):
         commands = (commands,)
 
-    with connect(host, port, timeout=timeout) as sock:
+    with connect(host, port, timeout=timeout) as conn:
         messages: list[str] = []
 
         for command in commands:
             if not command or command.startswith("#"):
                 continue
 
-            sock.send(command.strip(), encoding=encoding)
+            conn.send(command.strip(), encoding=encoding)
 
             if autorecv and "?" in command:
-                messages.append(sock.recv(bufsize))
+                messages.append(conn.recv(bufsize))
 
         return tuple(messages)
 
 
+@overload
+def send_commands_in(
+    path: StrPath,
+    /,
+    *,
+    host: None,
+    port: str,
+    timeout: float | None = DEFAULT_TIMEOUT,
+    encoding: str = DEFAULT_ENCODING,
+    autorecv: bool = DEFAULT_AUTORECV,
+    bufsize: int = DEFAULT_BUFSIZE,
+) -> tuple[str, ...]: ...
+@overload
 def send_commands_in(
     path: StrPath,
     /,
     *,
     host: str,
     port: int,
+    timeout: float | None = DEFAULT_TIMEOUT,
+    encoding: str = DEFAULT_ENCODING,
+    autorecv: bool = DEFAULT_AUTORECV,
+    bufsize: int = DEFAULT_BUFSIZE,
+) -> tuple[str, ...]: ...
+def send_commands_in(
+    path: StrPath,
+    /,
+    *,
+    host: Any,
+    port: Any,
     timeout: float | None = DEFAULT_TIMEOUT,
     encoding: str = DEFAULT_ENCODING,
     autorecv: bool = DEFAULT_AUTORECV,
