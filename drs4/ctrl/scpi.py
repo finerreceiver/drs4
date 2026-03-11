@@ -45,9 +45,19 @@ class CustomSocket(socket):
         encoding: str = DEFAULT_ENCODING,
     ) -> str:
         """Same as socket.recv(), but returns string, not bytes."""
-        received = super().recv(bufsize, flags)
-        string = received.decode(encoding).rstrip(end)
+        bend = end.encode(encoding)
+        received = bytearray()
 
+        while True:
+            if not (packet := super().recv(bufsize, flags)):
+                raise ConnectionError("Unexpected disconnect.")
+
+            received.extend(packet)
+
+            if received.endswith(bend):
+                break
+
+        string = received.decode(encoding).removesuffix(end)
         host, port = self.getpeername()
         LOGGER.debug(f"{host}:{port} -> {string}")
         return string
@@ -115,7 +125,7 @@ def send_commands(
         port: Port of the server.
         timeout: Timeout value in units of seconds.
         encoding: Encoding format for the commands.
-        autorecv: If True and a command ends with '?',
+        autorecv: If True and a command contains '?',
             receive a message and record it to a logger.
         bufsize: Maximum byte size for receiving a message.
 
@@ -151,7 +161,7 @@ def send_commands(
 
             sock.send(command.strip(), encoding=encoding)
 
-            if autorecv and command.endswith("?"):
+            if autorecv and "?" in command:
                 messages.append(sock.recv(bufsize))
 
         return tuple(messages)
@@ -175,7 +185,7 @@ def send_commands_in(
         port: Port of the server.
         timeout: Timeout value in units of seconds.
         encoding: Encoding format for the commands.
-        autorecv: If True and a command ends with '?',
+        autorecv: If True and a command contains '?',
             receive a message and record it to a logger.
         bufsize: Maximum byte size for receiving a message.
 
