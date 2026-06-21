@@ -1,17 +1,25 @@
 __all__ = ["VDIF", "open_vdif"]
 
-
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L, get_args
+from typing import Annotated, Literal as L
 
 # dependencies
 import numpy as np
 import xarray as xr
+import xarrayspecs as xs
 from numpy.typing import NDArray
-from xarray_dataclasses import AsDataArray, Attr, Coordof, Data, Dataof
-from .common import Chan, IntegTime, Time
+from .common import Chan, IntegTime, SpecVersion, Time
 from ..utils import StrPath, XarrayJoin
+
+# type hints
+Auto = Annotated[
+    xs.Data[tuple[L["time"], L["chan"]], np.float64],
+    xs.attrs(
+        long_name="Auto-correlation spectra",
+        units="Arbitrary unit",
+    ),
+]
 
 # constants
 CHAN_FIRST_HALF = np.arange(0, 256)
@@ -23,34 +31,26 @@ VDIF_DATA_BYTES = 1024
 VDIF_FRAME_BYTES = VDIF_HEADER_BYTES + VDIF_DATA_BYTES
 
 
-# data classes
 @dataclass
-class Auto:
-    data: Data[tuple[L["time"], L["chan"]], np.float64]
-    long_name: Attr[str] = "Auto-correlation spectra"
-    units: Attr[str] = "Arbitrary unit"
-
-
-@dataclass
-class VDIF(AsDataArray):
+class VDIF(xs.AsDataArray):
     """Data specification of DRS4 VDIF."""
 
     # dims
-    time: Coordof[Time]
+    time: Time
     """Measured time in UTC."""
 
-    chan: Coordof[Chan]
+    chan: Chan
     """Channel number (0-511)."""
 
     # vars
-    auto: Dataof[Auto]
+    auto: Auto
     """Auto-correlation spectra."""
 
     # attrs
-    integ_time: Attr[IntegTime]
+    integ_time: IntegTime
     """Spectral integration time in ms (100|200|500|1000)."""
 
-    spec_version: Attr[int] = field(default=0, init=False)
+    spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
 
 
@@ -117,7 +117,7 @@ def open_vdif(
     if integ_time is None:
         integ_time = infer_integ_time(frame_num)
 
-    if integ_time not in get_args(IntegTime):
+    if integ_time not in (100, 200, 500, 1000):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
     time = (
@@ -152,7 +152,7 @@ def infer_integ_time(frame_num: NDArray[np.int_], /) -> IntegTime:
     if sum(frame_num == (frame_max := max(frame_num))) < 2:
         raise RuntimeError("Could not infer spectral integration time.")
 
-    if (integ_time := 2000 // (frame_max + 1)) not in get_args(IntegTime):
+    if (integ_time := 2000 // (frame_max + 1)) not in (100, 200, 500, 1000):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
     return integ_time

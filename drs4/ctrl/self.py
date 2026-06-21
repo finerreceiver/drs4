@@ -5,7 +5,7 @@ __all__ = ["run", "send", "set_gain"]
 from logging import getLogger
 from os import getenv
 from subprocess import PIPE, CompletedProcess, run as sprun
-from typing import get_args, overload
+from typing import overload
 
 # dependencies
 import xarray as xr
@@ -280,7 +280,7 @@ def set_gain(
 
     """
     if chassis is None:
-        for chassis in get_args(Chassis):
+        for chassis in (1, 2):
             set_gain(
                 ms,
                 chassis=chassis,
@@ -296,7 +296,7 @@ def set_gain(
         return
 
     if interface is None:
-        for interface in get_args(Interface):
+        for interface in (1, 2):
             set_gain(
                 ms,
                 chassis=chassis,
@@ -318,10 +318,10 @@ def set_gain(
 
     LOGGER.debug(")")
 
-    if chassis not in get_args(Chassis):
+    if chassis not in (1, 2):
         raise ValueError("Chassis number must be 1|2.")
 
-    if interface not in get_args(Interface):
+    if interface not in (1, 2):
         raise ValueError("Interface number must be 1|2.")
 
     if isinstance(ms, xr.Dataset) and not ones and not zeros:

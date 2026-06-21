@@ -1,96 +1,90 @@
 __all__ = ["MS", "open_csvs", "open_vdifs"]
 
-
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L, get_args
+from typing import Annotated, Literal as L
 
 # dependencies
 import numpy as np
 import xarray as xr
-from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
+import xarrayspecs as xs
 from .common import (
     FREQ_INNER,
     FREQ_OUTER,
+    AutoLSB,
+    AutoUSB,
+    Chan,
     Channel,
     Chassis,
-    FreqRange,
-    Interface,
-    IntegTime,
-    SideBand,
-    Time,
-    Chan,
-    AutoUSB,
-    AutoLSB,
     Cross2SB,
+    FreqRange,
+    IntegTime,
+    Interface,
+    SideBand,
+    SpecVersion,
+    Time,
 )
 from .csv import open_csv_autos, open_csv_cross
 from .vdif import open_vdif
 from ..utils import StrPath, XarrayJoin
 
-
-# data classes
-@dataclass
-class Freq:
-    data: Data[L["chan"], np.float64]
-    long_name: Attr[str] = "Intermediate frequency"
-    units: Attr[str] = "GHz"
-
-
-@dataclass
-class SignalChan:
-    data: Data[L["time"], np.int64]
-    long_name: Attr[str] = "Signal channel number"
-
-
-@dataclass
-class SignalSB:
-    data: Data[L["time"], L["U3"]]
-    long_name: Attr[str] = "Signal sideband"
+# type hints
+Freq = Annotated[
+    xs.Data[L["chan"], np.float64],
+    xs.attrs(long_name="Intermediate frequency", units="GHz"),
+]
+SignalChan = Annotated[
+    xs.Data[L["time"], np.int64],
+    xs.attrs(long_name="Signal channel number"),
+]
+SignalSB = Annotated[
+    xs.Data[L["time"], L["U3"]],
+    xs.attrs(long_name="Signal sideband"),
+]
 
 
 @dataclass
-class MS(AsDataset):
+class MS(xs.AsDataset):
     """Data specification of DRS4 measurement set."""
 
     # dims
-    time: Coordof[Time]
+    time: Time
     """Measured time in UTC."""
 
-    chan: Coordof[Chan]
+    chan: Chan
     """Channel number (0-511)."""
 
     # coords
-    freq: Coordof[Freq]
+    freq: Freq
     """Intermediate frequency in GHz."""
 
-    signal_sb: Coordof[SignalSB]
+    signal_sb: SignalSB
     """Signal sideband (USB|LSB|NA)."""
 
-    signal_chan: Coordof[SignalChan]
+    signal_chan: SignalChan
     """Signal channel number (0-511|-1)."""
 
     # vars
-    auto_usb: Dataof[AutoUSB]
+    auto_usb: AutoUSB
     """Auto-correlation spectra of USB."""
 
-    auto_lsb: Dataof[AutoLSB]
+    auto_lsb: AutoLSB
     """Auto-correlation spectra of LSB."""
 
-    cross_2sb: Dataof[Cross2SB]
+    cross_2sb: Cross2SB
     """Cross-correlation spectra of 2SB (USB x LSB*)."""
 
     # attrs
-    chassis: Attr[Chassis]
+    chassis: Chassis
     """Chassis number of DRS4 (1|2)."""
 
-    interface: Attr[Interface]
+    interface: Interface
     """Interface (IF) number of DRS4 (1|2)."""
 
-    integ_time: Attr[IntegTime]
+    integ_time: IntegTime
     """Spectral integration time in ms (100|200|500|1000)."""
 
-    spec_version: Attr[int] = field(default=0, init=False)
+    spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
 
 
@@ -133,16 +127,16 @@ def open_csvs(
             integ_time, or interface is not valid.
 
     """
-    if chassis not in get_args(Chassis):
+    if chassis not in (1, 2):
         raise ValueError("Chassis number must be 1|2.")
 
-    if interface not in get_args(Interface):
+    if interface not in (1, 2):
         raise ValueError("Interface number must be 1|2.")
 
-    if freq_range not in get_args(FreqRange):
+    if freq_range not in ("inner", "outer"):
         raise ValueError("Spectral integration time must be inner|outer.")
 
-    if integ_time not in get_args(IntegTime):
+    if integ_time not in (100, 200, 500, 1000):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
     ds_autos, ds_cross = xr.align(
@@ -217,13 +211,13 @@ def open_vdifs(
             integ_time, or interface is not valid.
 
     """
-    if chassis not in get_args(Chassis):
+    if chassis not in (1, 2):
         raise ValueError("Chassis number must be 1|2.")
 
-    if interface not in get_args(Interface):
+    if interface not in (1, 2):
         raise ValueError("Interface number must be 1|2.")
 
-    if freq_range not in get_args(FreqRange):
+    if freq_range not in ("inner", "outer"):
         raise ValueError("Spectral integration time must be inner|outer.")
 
     da_usb, da_lsb = xr.align(
