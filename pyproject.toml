@@ -3,6 +3,20 @@ name = "drs4"
 version = "0.6.0"
 description = "Control and data acquisition software for FINER/DRS4"
 readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "dateparser>=1",
+    "fire>=0.7,<1.0",
+    "matplotlib>=3",
+    "numpy>=2",
+    "pillow>=10",
+    "pyserial>=3",
+    "tqdm>=4",
+    "typing-extensions>=4",
+    "xarray>=2024",
+    "xarrayspecs>=0.10,<1.0",
+    "zarr>=2,<3",
+]
 keywords = [
     "astronomy",
     "drs4",
@@ -14,23 +28,10 @@ keywords = [
     "single-dish",
     "submillimeter",
 ]
-requires-python = ">=3.10,<3.15"
-dependencies = [
-    "dateparser>=1,<2",
-    "fire>=0.7,<1",
-    "matplotlib>=3,<4",
-    "numpy>=2,<3",
-    "pillow>=10,<11",
-    "pyserial>=3,<4",
-    "tqdm>=4,<5",
-    "typing-extensions>=4,<5",
-    "xarray>=2024,<2027",
-    "xarray-dataclasses>=1,<2",
-    "zarr>=2,<3",
-]
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -40,7 +41,7 @@ classifiers = [
 
 [[project.authors]]
 name = "Akio Taniguchi"
-email = "a-taniguchi@mail.kitami-it.ac.jp"
+email = "mail@taniguchiak.io"
 
 [project.license]
 file = "LICENSE"
@@ -49,21 +50,21 @@ file = "LICENSE"
 homepage = "https://finerreceiver.github.io/drs4"
 repository = "https://github.com/finerreceiver/drs4"
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [dependency-groups]
 dev = [
     "black>=25,<27",
     "ipython>=8,<10",
-    "myst-parser>=3,<5",
-    "pandas-stubs>=2,<3",
-    "pydata-sphinx-theme>=0.16,<1.0",
+    "myst-parser>=4,<6",
+    "pandas-stubs>=2",
+    "pydata-sphinx-theme>=0.18,<1.0",
     "pyright>=1,<2",
     "pytest>=9,<10",
-    "sphinx>=8,<9",
+    "sphinx>=8,<10",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
 
 [tool.pyright]
 typeCheckingMode = "basic"
