@@ -1,50 +1,51 @@
 __all__ = ["GAIN_ONES", "GAIN_ZEROS", "Gain", "open_gain"]
 
-
 # standard library
 from dataclasses import dataclass, field
-from typing import Literal as L, overload
+from typing import Annotated, Literal as L, overload
 
 # dependencies
 import numpy as np
 import pandas as pd
 import xarray as xr
-from xarray_dataclasses import AsDataset, Attr, Coordof, Data, Dataof
-from .common import CHAN_TOTAL, Chan
+import xarrayspecs as xs
+from .common import CHAN_TOTAL, Chan, SpecVersion
 from ..utils import StrPath
 
+# type hints
+GainUSB = Annotated[
+    xs.Data[L["chan"], np.complex128],
+    xs.attrs(
+        long_name="Complex gain of USB",
+        units="Arbitrary unit",
+    ),
+]
+GainLSB = Annotated[
+    xs.Data[L["chan"], np.complex128],
+    xs.attrs(
+        long_name="Complex gain of LSB",
+        units="Arbitrary unit",
+    ),
+]
+
 
 @dataclass
-class GainUSB:
-    data: Data[L["chan"], np.complex128]
-    long_name: Attr[str] = "Complex gain of USB"
-    units: Attr[str] = "Arbitrary unit"
-
-
-@dataclass
-class GainLSB:
-    data: Data[L["chan"], np.complex128]
-    long_name: Attr[str] = "Complex gain of LSB"
-    units: Attr[str] = "Arbitrary unit"
-
-
-@dataclass
-class Gain(AsDataset):
+class Gain(xs.AsDataset):
     """Complex gains for digital sideband separation."""
 
     # dims
-    chan: Coordof[Chan]
-    """Channel number."""
+    chan: Chan
+    """Channel number (0-511)."""
 
     # vars
-    usb: Dataof[GainUSB]
+    usb: GainUSB
     """Complex gain of USB."""
 
-    lsb: Dataof[GainLSB]
+    lsb: GainLSB
     """Complex gain of LSB."""
 
     # attrs
-    spec_version: Attr[int] = field(default=0, init=False)
+    spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
 
 
@@ -55,8 +56,6 @@ def open_gain(
     *,
     format: L["Dataset"],
 ) -> xr.Dataset: ...
-
-
 @overload
 def open_gain(
     ms: StrPath,
@@ -64,15 +63,11 @@ def open_gain(
     *,
     format: L["DataFrame"],
 ) -> pd.DataFrame: ...
-
-
 @overload
 def open_gain(
     ms: StrPath,
     /,
 ) -> xr.Dataset: ...
-
-
 def open_gain(
     ms: StrPath,
     /,

@@ -1,6 +1,5 @@
 __all__ = ["CSVAutos", "CSVCross", "open_csv_autos", "open_csv_cross"]
 
-
 # standard library
 from dataclasses import dataclass, field
 
@@ -8,8 +7,8 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 import xarray as xr
-from xarray_dataclasses import AsDataset, Attr, Coordof, Dataof
-from .common import Time, Chan, AutoUSB, AutoLSB, Cross2SB
+import xarrayspecs as xs
+from .common import AutoLSB, AutoUSB, Chan, Cross2SB, SpecVersion, Time
 from ..utils import StrPath
 
 # constants
@@ -23,47 +22,46 @@ TIME_DEFAULT = pd.to_datetime("2000")  # UTC
 TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"  # UTC
 
 
-# data classes
 @dataclass
-class CSVAutos(AsDataset):
+class CSVAutos(xs.AsDataset):
     """Data specification of DRS4 CSV (auto-correlations)."""
 
     # dims
-    time: Coordof[Time]
+    time: Time
     """Measured time in UTC."""
 
-    chan: Coordof[Chan]
+    chan: Chan
     """Channel number (0-511)."""
 
     # vars
-    auto_usb: Dataof[AutoUSB]
+    auto_usb: AutoUSB
     """Auto-correlation spectra of USB."""
 
-    auto_lsb: Dataof[AutoLSB]
+    auto_lsb: AutoLSB
     """Auto-correlation spectra of LSB."""
 
     # attrs
-    spec_version: Attr[int] = field(default=0, init=False)
+    spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
 
 
 @dataclass
-class CSVCross(AsDataset):
+class CSVCross(xs.AsDataset):
     """Data specification of DRS4 CSV (cross-correlation)."""
 
     # dims
-    time: Coordof[Time]
+    time: Time
     """Measured time in UTC."""
 
-    chan: Coordof[Chan]
+    chan: Chan
     """Channel number (0-511)."""
 
     # vars
-    cross_2sb: Dataof[Cross2SB]
+    cross_2sb: Cross2SB
     """Cross-correlation spectra of 2SB (USB x LSB*)."""
 
     # attrs
-    spec_version: Attr[int] = field(default=0, init=False)
+    spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
 
 

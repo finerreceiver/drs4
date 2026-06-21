@@ -19,7 +19,6 @@ from socket import (
 )
 from threading import Event
 from time import sleep
-from typing import get_args
 
 # dependencies
 import xarray as xr
@@ -130,16 +129,16 @@ def auto(
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
 
-    if chassis not in get_args(Chassis):
+    if chassis not in (1, 2):
         raise ValueError("Chassis number must be 1|2.")
 
-    if freq_range_if1 not in get_args(FreqRange):
+    if freq_range_if1 not in ("inner", "outer"):
         raise ValueError("Frequency range must be inner|outer.")
 
-    if freq_range_if2 not in get_args(FreqRange):
+    if freq_range_if2 not in ("inner", "outer"):
         raise ValueError("Frequency range must be inner|outer.")
 
-    if integ_time not in get_args(IntegTime):
+    if integ_time not in (100, 200, 500, 1000):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
     if (zarr_if1 := Path(zarr_if1)).exists() and not append and not overwrite:
