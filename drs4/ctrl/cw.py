@@ -15,7 +15,7 @@ from ..specs.common import (
     CHAN_TOTAL,
     FREQ_INTERVAL,
     ENV_LO_FREQ,
-    ENV_LO_MULT,
+    ENV_SG_MULT,
     ENV_SG_ADDR,
     ENV_SG_AMPL,
     ENV_SG_PORT,
@@ -33,7 +33,7 @@ def on(
     signal_chan: Channel,
     # for measurement (optional)
     lo_freq: float | None = None,
-    lo_mult: int | None = None,
+    sg_mult: int | None = None,
     sg_ampl: float | None = None,
     # for connection (optional)
     sg_host: str | None = None,
@@ -48,8 +48,8 @@ def on(
         signal_sb: Signal sideband (USB|LSB).
         lo_freq: LO frequency in GHz.
             If not specified, environment variable ``DRS4_LO_FREQ`` will be used.
-        lo_mult: LO multiplication factor.
-            If not specified, environment variable ``DRS4_LO_MULT`` will be used.
+        sg_mult: Multiplication factor of the CW signal.
+            If not specified, environment variable ``DRS4_SG_MULT`` will be used.
         sg_ampl: Amplitude of the CW signal in dBm.
             If not specified, environment variable ``DRS4_CW_SG_AMPL`` will be used.
         sg_host: Host name or IP address of the SG (e.g. Keysight 8257D).
@@ -62,8 +62,8 @@ def on(
     if lo_freq is None:
         lo_freq = float(getenv(ENV_LO_FREQ, 0.0))
 
-    if lo_mult is None:
-        lo_mult = int(getenv(ENV_LO_MULT, 0))
+    if sg_mult is None:
+        sg_mult = int(getenv(ENV_SG_MULT, 0))
 
     if sg_ampl is None:
         sg_ampl = float(getenv(ENV_SG_AMPL, 0.0))
@@ -78,9 +78,9 @@ def on(
         signal_chan = CHAN_TOTAL * 2 - signal_chan
 
     if signal_sb == "USB":
-        sg_freq = (lo_freq + FREQ_INTERVAL * signal_chan) / lo_mult
+        sg_freq = (lo_freq + FREQ_INTERVAL * signal_chan) / sg_mult
     elif signal_sb == "LSB":
-        sg_freq = (lo_freq - FREQ_INTERVAL * signal_chan) / lo_mult
+        sg_freq = (lo_freq - FREQ_INTERVAL * signal_chan) / sg_mult
     else:
         raise ValueError("Signal sideband must be USB|LSB.")
 
