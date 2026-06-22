@@ -60,10 +60,10 @@ def on(
 
     """
     if lo_freq is None:
-        lo_freq = float(getenv(ENV_LO_FREQ, 0.0))
+        lo_freq = float(getenv(ENV_LO_FREQ, 1.0))
 
     if sg_mult is None:
-        sg_mult = int(getenv(ENV_SG_MULT, 0))
+        sg_mult = int(getenv(ENV_SG_MULT, 1))
 
     if sg_ampl is None:
         sg_ampl = float(getenv(ENV_SG_AMPL, 0.0))
