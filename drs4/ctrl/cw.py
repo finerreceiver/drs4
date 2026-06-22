@@ -93,7 +93,6 @@ def on(
 
     send_commands(
         [
-            "OUTP OFF",
             "FREQ:MODE CW",
             f"FREQ:CW {sg_freq}GHz",
             f"AMPL {sg_ampl}dBm",
