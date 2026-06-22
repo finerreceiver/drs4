@@ -19,6 +19,8 @@ from socket import (
 )
 from threading import Event
 from time import sleep
+from typing import Any
+from warnings import catch_warnings, simplefilter
 
 # dependencies
 import xarray as xr
@@ -34,8 +36,10 @@ from ..specs.common import (
     ENV_DEST_PORT4,
     OBSID_FORMAT,
     VDIF_FORMAT,
+    ZARR_CHUNKS,
     ZARR_ENCODING,
     ZARR_FORMAT,
+    ZARR_SHARDS,
     Channel,
     Chassis,
     DSPMode,
@@ -46,7 +50,7 @@ from ..specs.common import (
 )
 from ..specs.ms import open_vdifs
 from ..specs.vdif import VDIF_FRAME_BYTES
-from ..utils import StrPath, XarrayJoin, set_workdir, unique
+from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir, unique
 
 # constants
 GROUP = "239.0.0.1"
@@ -72,12 +76,10 @@ def auto(
     overwrite: bool = False,
     progress: bool = False,
     workdir: StrPath | None = None,
-    zarr_if1: StrPath | None = None,
-    zarr_if2: StrPath | None = None,
+    zarr: StrPath | None = None,
     # for DRS4 settings (optional)
     dsp_mode: DSPMode = "SB",
-    gain_if1: xr.Dataset | StrPath | None = None,
-    gain_if2: xr.Dataset | StrPath | None = None,
+    gain: xr.DataTree | StrPath | None = None,
     settings: bool = True,
     # for connection (optional)
     ctrl_addr: str | None = None,
@@ -88,7 +90,7 @@ def auto(
     dest_port3: int | None = None,
     dest_port4: int | None = None,
     timeout: float | None = None,
-) -> tuple[Path, Path]:
+) -> Path:
     """"""
     obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
 
@@ -113,11 +115,8 @@ def auto(
     if dest_port4 is None:
         dest_port4 = int(getenv(ENV_DEST_PORT4.format(chassis), ""))
 
-    if zarr_if1 is None:
-        zarr_if1 = ZARR_FORMAT.format(obsid, chassis, 1)
-
-    if zarr_if2 is None:
-        zarr_if2 = ZARR_FORMAT.format(obsid, chassis, 2)
+    if zarr is None:
+        zarr = ZARR_FORMAT.format(obsid, chassis)
 
     LOGGER.debug("(")
 
@@ -141,11 +140,20 @@ def auto(
     if integ_time not in (100, 200, 500, 1000):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
-    if (zarr_if1 := Path(zarr_if1)).exists() and not append and not overwrite:
-        raise FileExistsError(zarr_if1)
+    if (zarr := Path(zarr)).exists() and not append and not overwrite:
+        raise FileExistsError(zarr)
 
-    if (zarr_if2 := Path(zarr_if2)).exists() and not append and not overwrite:
-        raise FileExistsError(zarr_if2)
+    if isinstance(gain, xr.DataTree):
+        gain_if1 = gain["/if1"].to_dataset()
+        gain_if2 = gain["/if2"].to_dataset()
+    elif is_strpath(gain):
+        gain_if1 = Path(gain) / "if1"
+        gain_if2 = Path(gain) / "if2"
+    elif gain is None:
+        gain_if1 = None
+        gain_if2 = None
+    else:
+        raise TypeError("Gain must be either DataTree or Zarr path.")
 
     if settings:
         set_gain(
@@ -270,17 +278,74 @@ def auto(
             ds_if1 = ds_if1.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
             ds_if2 = ds_if2.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
 
-        if zarr_if1.exists() and append:
-            ds_if1.to_zarr(zarr_if1, mode="a", append_dim="time")  # type: ignore
-        else:
-            ds_if1.to_zarr(zarr_if1, mode="w", encoding=ZARR_ENCODING)  # type: ignore
+        encoding_if1: dict[Any, Any] = ZARR_ENCODING.copy()
+        encoding_if2: dict[Any, Any] = ZARR_ENCODING.copy()
 
-        if zarr_if2.exists() and append:
-            ds_if2.to_zarr(zarr_if2, mode="a", append_dim="time")  # type: ignore
-        else:
-            ds_if2.to_zarr(zarr_if2, mode="w", encoding=ZARR_ENCODING)  # type: ignore
+        for name, var in ds_if1.variables.items():
+            encoding_if1.setdefault(name, {})
+            encoding_if1[name]["chunks"] = tuple(
+                # fmt: off
+                ZARR_CHUNKS.get(dim, var.sizes[dim]) # type: ignore
+                for dim in var.dims
+                # fmt: on
+            )
+            encoding_if1[name]["shards"] = tuple(
+                # fmt: off
+                ZARR_SHARDS.get(dim, var.sizes[dim]) # type: ignore
+                for dim in var.dims
+                # fmt: on
+            )
 
-        return zarr_if1.resolve(), zarr_if2.resolve()
+        for name, var in ds_if2.variables.items():
+            encoding_if2.setdefault(name, {})
+            encoding_if2[name]["chunks"] = tuple(
+                # fmt: off
+                ZARR_CHUNKS.get(dim, var.sizes[dim]) # type: ignore
+                for dim in var.dims
+                # fmt: on
+            )
+            encoding_if2[name]["shards"] = tuple(
+                # fmt: off
+                ZARR_SHARDS.get(dim, var.sizes[dim]) # type: ignore
+                for dim in var.dims
+                # fmt: on
+            )
+
+        with catch_warnings():
+            simplefilter("ignore", category=FutureWarning)
+
+            if zarr.exists() and append:
+                ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+                    zarr,
+                    group="/if1",
+                    mode="a",
+                    append_dim="time",
+                    consolidated=False,
+                )
+                ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                    zarr,
+                    group="/if2",
+                    mode="a",
+                    append_dim="time",
+                    consolidated=False,
+                )
+            else:
+                ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+                    zarr,
+                    group="/if1",
+                    mode="w",
+                    encoding=encoding_if1,
+                    consolidated=False,
+                )
+                ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                    zarr,
+                    group="/if2",
+                    mode="a",
+                    encoding=encoding_if2,
+                    consolidated=False,
+                )
+
+        return zarr.resolve()
 
 
 def dump(

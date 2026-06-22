@@ -3,19 +3,18 @@ name = "drs4"
 version = "0.6.0"
 description = "Control and data acquisition software for FINER/DRS4"
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "dateparser>=1",
-    "fire>=0.7,<1.0",
     "matplotlib>=3",
     "numpy>=2",
     "pillow>=10",
     "pyserial>=3",
     "tqdm>=4",
     "typing-extensions>=4",
-    "xarray>=2024",
+    "xarray[parallel]>=2025",
     "xarrayspecs>=0.10,<1.0",
-    "zarr>=2,<3",
+    "zarr>=3",
 ]
 keywords = [
     "astronomy",
@@ -32,7 +31,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

@@ -24,8 +24,10 @@ __all__ = [
     "CSV_CROSS_FORMAT",
     "OBSID_FORMAT",
     "VDIF_FORMAT",
+    "ZARR_CHUNKS",
     "ZARR_ENCODING",
     "ZARR_FORMAT",
+    "ZARR_SHARDS",
     # constants (environment variable)
     "ENV_CTRL_ADDR",
     "ENV_CTRL_USER",
@@ -100,13 +102,15 @@ CSV_AUTOS_FORMAT = "drs4-{0}-chassis{1}-autos-if{2}.csv"
 CSV_CROSS_FORMAT = "drs4-{0}-chassis{1}-cross-if{2}.csv"
 OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
 VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
+ZARR_CHUNKS = {"time": 600, "chan": CHAN_TOTAL}
 ZARR_ENCODING = {
     "time": {
         "dtype": "int64",
         "units": "nanoseconds since 2000-01-01",
     }
 }
-ZARR_FORMAT = "drs4-{0}-chassis{1}-if{2}.zarr.zip"
+ZARR_FORMAT = "drs4-{0}-chassis{1}.zarr"
+ZARR_SHARDS = {"time": 36000, "chan": CHAN_TOTAL}
 
 # constants (environment variable)
 ENV_CTRL_ADDR = "DRS4_CHASSIS{0}_CTRL_ADDR"

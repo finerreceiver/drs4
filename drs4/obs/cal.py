@@ -25,36 +25,43 @@ def yfactor(
     chassis: Chassis,
     duration: int = 10,
     figsize: tuple[float, float] = (12, 6),
-    zarr_if1_hot: StrPath | None = None,
-    zarr_if2_hot: StrPath | None = None,
-    zarr_if1_cold: StrPath | None = None,
-    zarr_if2_cold: StrPath | None = None,
+    zarr_hot: StrPath | None = None,
+    zarr_cold: StrPath | None = None,
 ) -> Path:
     """Measure and plot the Y factor of a chassis of DRS4."""
-    if (
-        zarr_if1_hot is None
-        and zarr_if2_hot is None
-        and zarr_if1_cold is None
-        and zarr_if2_cold is None
-    ):
+    if zarr_hot is None or zarr_cold is None:
         input("Press any key to start the hot measurement.")
-        zarr_if1_hot, zarr_if2_hot = auto(chassis=chassis, duration=duration)
+        zarr_hot = auto(chassis=chassis, duration=duration)
         input("Press any key to start the cold measurement.")
-        zarr_if1_cold, zarr_if2_cold = auto(chassis=chassis, duration=duration)
+        zarr_cold = auto(chassis=chassis, duration=duration)
 
         return yfactor(
             chassis=chassis,
             duration=duration,
-            zarr_if1_hot=zarr_if1_hot,
-            zarr_if2_hot=zarr_if2_hot,
-            zarr_if1_cold=zarr_if1_cold,
-            zarr_if2_cold=zarr_if2_cold,
+            zarr_hot=zarr_hot,
+            zarr_cold=zarr_cold,
         )
 
-    if1_hot = xr.open_zarr(zarr_if1_hot)
-    if2_hot = xr.open_zarr(zarr_if2_hot)
-    if1_cold = xr.open_zarr(zarr_if1_cold)
-    if2_cold = xr.open_zarr(zarr_if2_cold)
+    if1_hot = xr.open_dataset(
+        Path(zarr_hot) / "if1",
+        engine="zarr",
+        backend_kwargs={"consolidated": False},
+    )
+    if2_hot = xr.open_dataset(
+        Path(zarr_hot) / "if2",
+        engine="zarr",
+        backend_kwargs={"consolidated": False},
+    )
+    if1_cold = xr.open_dataset(
+        Path(zarr_cold) / "if1",
+        engine="zarr",
+        backend_kwargs={"consolidated": False},
+    )
+    if2_cold = xr.open_dataset(
+        Path(zarr_cold) / "if2",
+        engine="zarr",
+        backend_kwargs={"consolidated": False},
+    )
 
     fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True)
 
@@ -156,7 +163,7 @@ def yfactor(
         ax.set_ylim(-1, 5)
 
     fig.tight_layout()
-    fig.savefig(path := Path(f"drs4-yfactor-chassis{chassis}-if12.pdf"))
+    fig.savefig(path := Path(f"drs4-yfactor-chassis{chassis}.pdf"))
     return path.resolve()
 
 
