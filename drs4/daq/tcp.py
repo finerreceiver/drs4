@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from logging import getLogger
 from os import getenv
 from pathlib import Path
+from threading import Event
 from time import sleep
 from typing import Any
 from warnings import catch_warnings, simplefilter
@@ -48,7 +49,7 @@ def cross(
     *,
     # for measurement (required)
     chassis: Chassis,
-    duration: int,
+    duration: Event | int,
     # for measurement (optional)
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
@@ -61,7 +62,7 @@ def cross(
     integrate: bool = False,
     join: XarrayJoin = "inner",
     overwrite: bool = False,
-    progress: bool = False,
+    progress: bool | int = False,
     workdir: StrPath | None = None,
     zarr: StrPath | None = None,
     # for DRS4 settings (optional)
@@ -156,7 +157,14 @@ def cross(
 
     with (
         set_workdir(workdir) as workdir,
-        tqdm(disable=not progress, total=int(duration), unit="s") as bar,
+        tqdm(
+            desc=f"DRS4 Chassis {chassis}",
+            disable=not progress,
+            leave=True,
+            position=max(int(progress) - 1, 0),
+            total=None if isinstance(duration, Event) else int(duration),
+            unit="s",
+        ) as bar,
         open(
             csv_autos_if1 := workdir / CSV_AUTOS_FORMAT.format(obsid, chassis, 1),
             mode="w",
@@ -175,7 +183,17 @@ def cross(
         ) as f_cross_if2,
     ):
         try:
-            for cycle in range(duration):
+            cycle = 0
+            while True:
+                if isinstance(duration, Event):
+                    if duration.is_set():
+                        LOGGER.debug("Data acquisition finished by event.")
+                        break
+                else:
+                    if cycle >= duration:
+                        LOGGER.debug("Data acquisition finished by duration.")
+                        break
+
                 time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
                 result = run(
                     # for interface 1
@@ -217,6 +235,7 @@ def cross(
                     )
 
                 bar.update(1)
+                cycle += 1
         except KeyboardInterrupt:
             LOGGER.warning("Data acquisition interrupted by user.")
         finally:

@@ -61,7 +61,7 @@ def auto(
     *,
     # for measurement (required)
     chassis: Chassis,
-    duration: int,
+    duration: Event | int,
     # for measurement (optional)
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
@@ -74,7 +74,7 @@ def auto(
     integrate: bool = False,
     join: XarrayJoin = "inner",
     overwrite: bool = False,
-    progress: bool = False,
+    progress: bool | int = False,
     workdir: StrPath | None = None,
     zarr: StrPath | None = None,
     # for DRS4 settings (optional)
@@ -191,7 +191,14 @@ def auto(
         Manager() as manager,
         ProcessPoolExecutor(4) as executor,
         set_workdir(workdir) as workdir,
-        tqdm(disable=not progress, total=int(duration), unit="s") as bar,
+        tqdm(
+            desc=f"DRS4 Chassis {chassis}",
+            disable=not progress,
+            leave=True,
+            position=max(int(progress) - 1, 0),
+            total=None if isinstance(duration, Event) else int(duration),
+            unit="s",
+        ) as bar,
     ):
         cancel = manager.Event()
         executor.submit(
@@ -232,9 +239,17 @@ def auto(
         )
 
         try:
-            for _ in range(int(duration)):
-                sleep(1)
-                bar.update(1)
+            if isinstance(duration, Event):
+                while not duration.wait(1.0):
+                    bar.update(1)
+
+                LOGGER.debug("Data acquisition finished by event.")
+            else:
+                for _ in range(int(duration)):
+                    sleep(1)
+                    bar.update(1)
+
+                LOGGER.debug("Data acquisition finished by duration.")
         except KeyboardInterrupt:
             LOGGER.warning("Data acquisition interrupted by user.")
         finally:
@@ -360,7 +375,7 @@ def dump(
     # for file saving (optional)
     cancel: Event | None = None,
     timeout: float | None = None,
-    progress: bool = False,
+    progress: bool | int = False,
     overwrite: bool = False,
 ) -> None:
     """Receive and dump DRS4 data per input into a VDIF file.
@@ -391,7 +406,13 @@ def dump(
     with (
         open(vdif, "wb") as file,
         socket(type=SOCK_DGRAM) as sock,
-        tqdm(desc=prefix, disable=not progress, unit="byte") as bar,
+        tqdm(
+            desc=prefix,
+            disable=not progress,
+            leave=True,
+            position=max(int(progress) - 1, 0),
+            unit="byte",
+        ) as bar,
     ):
         # create socket
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
