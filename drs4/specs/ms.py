@@ -24,7 +24,7 @@ from .common import (
     SpecVersion,
     Time,
 )
-from .csv import open_csv_autos, open_csv_cross
+from .csv import open_csv_auto, open_csv_cross
 from .vdif import open_vdif
 from ..utils import StrPath, XarrayJoin
 
@@ -89,7 +89,7 @@ class MS(xs.AsDataset):
 
 
 def open_csvs(
-    csv_autos: StrPath,
+    csv_auto: StrPath,
     csv_cross: StrPath,
     /,
     *,
@@ -107,7 +107,7 @@ def open_csvs(
     """Open CSV files of auto/cross correlations as a Dataset.
 
     Args:
-        csv_autos: Path of input CSV file of auto-correlations.
+        csv_auto: Path of input CSV file of auto-correlations.
         csv_cross: Path of input CSV file of cross-correlation.
         chassis: Chassis number of DRS4 (1|2).
         interface: Interface number of DRS4 (1|2).
@@ -139,29 +139,29 @@ def open_csvs(
     if integ_time not in (100, 200, 500, 1000):
         raise ValueError("Spectral integration time must be 100|200|500|1000.")
 
-    ds_autos, ds_cross = xr.align(
-        open_csv_autos(csv_autos),
+    ds_auto, ds_cross = xr.align(
+        open_csv_auto(csv_auto),
         open_csv_cross(csv_cross),
         join=join,
     )
 
     return MS.new(
         # dims
-        time=ds_autos.time.data,
-        chan=ds_autos.chan.data,
+        time=ds_auto.time.data,
+        chan=ds_auto.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
         signal_sb=np.full(
-            ds_autos.sizes["time"],
+            ds_auto.sizes["time"],
             signal_sb if signal_sb is not None else "NA",
         ),
         signal_chan=np.full(
-            ds_autos.sizes["time"],
+            ds_auto.sizes["time"],
             signal_chan if signal_chan is not None else -1,
         ),
         # vars
-        auto_usb=ds_autos.auto_usb.data,
-        auto_lsb=ds_autos.auto_lsb.data,
+        auto_usb=ds_auto.auto_usb.data,
+        auto_lsb=ds_auto.auto_lsb.data,
         cross_2sb=ds_cross.cross_2sb.data,
         # attrs
         chassis=chassis,

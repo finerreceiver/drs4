@@ -1,4 +1,4 @@
-__all__ = ["CSVAutos", "CSVCross", "open_csv_autos", "open_csv_cross"]
+__all__ = ["CSVAuto", "CSVCross", "open_csv_auto", "open_csv_cross"]
 
 # standard library
 from dataclasses import dataclass, field
@@ -23,7 +23,7 @@ TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"  # UTC
 
 
 @dataclass
-class CSVAutos(xs.AsDataset):
+class CSVAuto(xs.AsDataset):
     """Data specification of DRS4 CSV (auto-correlations)."""
 
     # dims
@@ -65,7 +65,7 @@ class CSVCross(xs.AsDataset):
     """Version of the data specification."""
 
 
-def open_csv_autos(csv: StrPath, /) -> xr.Dataset:
+def open_csv_auto(csv: StrPath, /) -> xr.Dataset:
     """Open a CSV file of auto-correlations as a Dataset.
 
     Args:
@@ -82,7 +82,7 @@ def open_csv_autos(csv: StrPath, /) -> xr.Dataset:
 
     ds = df.set_index([COL_TIME, COL_FREQ]).to_xarray()
 
-    return CSVAutos.new(
+    return CSVAuto.new(
         time=ds[COL_TIME].data,
         chan=np.arange(ds.sizes[COL_FREQ]),
         auto_usb=ds[COL_USB].data,
