@@ -3,10 +3,9 @@ __all__ = ["auto", "autos"]
 
 # standard library
 from collections.abc import Sequence
-from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from logging import getLogger
-from multiprocessing import Manager
 from os import getenv
 from pathlib import Path
 from socket import (
@@ -174,80 +173,82 @@ def auto(
         result.check_returncode()
         sleep(1.5)
 
-    with (
-        Manager() as manager,
-        ProcessPoolExecutor(4) as executor,
-        set_workdir(workdir) as workdir,
-        tqdm(
-            desc=f"Chassis {chassis}",
-            disable=not progress,
-            leave=True,
-            position=max(int(progress) - 1, 0),
-            total=None if isinstance(duration, Event) else int(duration),
-            unit="s",
-        ) as bar,
-    ):
-        if sync is not None:
+    with set_workdir(workdir) as workdir:
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            if sync is not None:
+                try:
+                    sync.wait(timeout)
+                except BrokenBarrierError:
+                    return zarr.resolve()
+
+            interrupt = Event()
+            futures = [
+                executor.submit(
+                    dump,
+                    vdif_in1 := workdir / f"{zarr.stem}-chassis{chassis}-in1.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port1,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+                executor.submit(
+                    dump,
+                    vdif_in2 := workdir / f"{zarr.stem}-chassis{chassis}-in2.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port2,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+                executor.submit(
+                    dump,
+                    vdif_in3 := workdir / f"{zarr.stem}-chassis{chassis}-in3.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port3,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+                executor.submit(
+                    dump,
+                    vdif_in4 := workdir / f"{zarr.stem}-chassis{chassis}-in4.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port4,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+            ]
+
             try:
-                sync.wait(timeout)
-            except BrokenBarrierError:
-                return zarr.resolve()
+                with tqdm(
+                    desc=f"Chassis {chassis}",
+                    disable=not progress,
+                    leave=True,
+                    position=max(int(progress) - 1, 0),
+                    total=None if isinstance(duration, Event) else int(duration),
+                    unit="s",
+                ) as bar:
+                    if isinstance(duration, Event):
+                        while not duration.wait(1.0):
+                            bar.update(1)
 
-        bar.reset()
-        interrupt = manager.Event()
-        executor.submit(
-            dump,
-            vdif_in1 := workdir / f"{zarr.stem}-chassis{chassis}-in1.vdif",
-            dest_addr=dest_addr,
-            dest_port=dest_port1,
-            interrupt=interrupt,
-            overwrite=overwrite,
-            timeout=timeout,
-        )
-        executor.submit(
-            dump,
-            vdif_in2 := workdir / f"{zarr.stem}-chassis{chassis}-in2.vdif",
-            dest_addr=dest_addr,
-            dest_port=dest_port2,
-            interrupt=interrupt,
-            overwrite=overwrite,
-            timeout=timeout,
-        )
-        executor.submit(
-            dump,
-            vdif_in3 := workdir / f"{zarr.stem}-chassis{chassis}-in3.vdif",
-            dest_addr=dest_addr,
-            dest_port=dest_port3,
-            interrupt=interrupt,
-            overwrite=overwrite,
-            timeout=timeout,
-        )
-        executor.submit(
-            dump,
-            vdif_in4 := workdir / f"{zarr.stem}-chassis{chassis}-in4.vdif",
-            dest_addr=dest_addr,
-            dest_port=dest_port4,
-            interrupt=interrupt,
-            overwrite=overwrite,
-            timeout=timeout,
-        )
+                        bar.update(1)
+                        LOGGER.debug("Data acquisition finished by event.")
+                    else:
+                        for _ in range(int(duration)):
+                            sleep(1)
+                            bar.update(1)
 
-        try:
-            if isinstance(duration, Event):
-                while not duration.wait(1.0):
-                    bar.update(1)
+                        LOGGER.debug("Data acquisition finished by duration.")
+            except KeyboardInterrupt:
+                LOGGER.warning("Data acquisition interrupted by user.")
+            finally:
+                interrupt.set()
 
-                LOGGER.debug("Data acquisition finished by event.")
-            else:
-                for _ in range(int(duration)):
-                    sleep(1)
-                    bar.update(1)
-
-                LOGGER.debug("Data acquisition finished by duration.")
-        except KeyboardInterrupt:
-            LOGGER.warning("Data acquisition interrupted by user.")
-        finally:
-            interrupt.set()
+                for future in futures:
+                    future.result()
 
         ds_if1, ds_if2 = xr.align(
             open_vdifs(
