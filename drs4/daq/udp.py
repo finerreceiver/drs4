@@ -129,12 +129,15 @@ def auto(
     if (zarr := Path(zarr)).exists() and not append and not overwrite:
         raise FileExistsError(zarr)
 
+    group_if1 = Path(f"chassis{chassis}") / "if1"
+    group_if2 = Path(f"chassis{chassis}") / "if2"
+
     if isinstance(gain, xr.DataTree):
-        gain_if1 = gain[f"/chassis{chassis}/if1"].to_dataset()
-        gain_if2 = gain[f"/chassis{chassis}/if2"].to_dataset()
+        gain_if1 = gain[("/" / group_if1).as_posix()].to_dataset()
+        gain_if2 = gain[("/" / group_if2).as_posix()].to_dataset()
     elif is_strpath(gain):
-        gain_if1 = Path(gain) / f"chassis{chassis}" / "if1"
-        gain_if2 = Path(gain) / f"chassis{chassis}" / "if2"
+        gain_if1 = Path(gain) / group_if1
+        gain_if2 = Path(gain) / group_if2
     elif gain is None:
         gain_if1 = None
         gain_if2 = None
@@ -321,18 +324,10 @@ def auto(
                 # fmt: on
             )
 
-        if zarr.exists() and append:
+        if (zarr / group_if1).exists() and append:
             ds_if1.chunk(ZARR_CHUNKS).to_zarr(
                 zarr,
-                group=f"/chassis{chassis}/if1",
-                mode="a",
-                append_dim="time",
-                consolidated=False,
-                safe_chunks=False,
-            )
-            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
-                zarr,
-                group=f"/chassis{chassis}/if2",
+                group=("/" / group_if1).as_posix(),
                 mode="a",
                 append_dim="time",
                 consolidated=False,
@@ -341,15 +336,26 @@ def auto(
         else:
             ds_if1.chunk(ZARR_CHUNKS).to_zarr(
                 zarr,
-                group=f"/chassis{chassis}/if1",
+                group=("/" / group_if1).as_posix(),
                 mode="w",
                 encoding=encoding_if1,
                 consolidated=False,
                 safe_chunks=False,
             )
+
+        if (zarr / group_if2).exists() and append:
             ds_if2.chunk(ZARR_CHUNKS).to_zarr(
                 zarr,
-                group=f"/chassis{chassis}/if2",
+                group=("/" / group_if2).as_posix(),
+                mode="a",
+                append_dim="time",
+                consolidated=False,
+                safe_chunks=False,
+            )
+        else:
+            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if2).as_posix(),
                 mode="a",
                 encoding=encoding_if2,
                 consolidated=False,
