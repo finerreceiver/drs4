@@ -432,17 +432,16 @@ def crosses(
 
             if isinstance(duration, int):
                 interrupt.wait(duration)
-                interrupt.set()
             else:
                 interrupt.wait()
-
         except BrokenBarrierError:
-            interrupt.set()
+            pass
         except KeyboardInterrupt:
-            interrupt.set()
             sync.abort()
+        finally:
+            interrupt.set()
 
-        for future in futures:
-            future.result()
+            for future in futures:
+                future.result()
 
     return zarr.resolve()
