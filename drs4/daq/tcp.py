@@ -145,100 +145,97 @@ def cross(
         result.check_returncode()
         sleep(1.5)
 
-    with (
-        set_workdir(workdir) as workdir,
-        tqdm(
-            desc=f"Chassis {chassis}",
-            disable=not progress,
-            leave=True,
-            position=max(int(progress) - 1, 0),
-            total=None if isinstance(duration, Event) else int(duration),
-            unit="s",
-        ) as bar,
-        open(
-            csv_auto_if1 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if1.csv",
-            mode="w",
-        ) as f_auto_if1,
-        open(
-            csv_cross_if1 := workdir / f"{zarr.stem}-cross-chassis{chassis}-if1.csv",
-            mode="w",
-        ) as f_cross_if1,
-        open(
-            csv_auto_if2 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if2.csv",
-            mode="w",
-        ) as f_auto_if2,
-        open(
-            csv_cross_if2 := workdir / f"{zarr.stem}-cross-chassis{chassis}-if2.csv",
-            mode="w",
-        ) as f_cross_if2,
-    ):
-        if sync is not None:
+    with set_workdir(workdir) as workdir:
+        with (
+            open(
+                csv_auto_if1 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if1.csv",
+                mode="w",
+            ) as f_auto_if1,
+            open(
+                csv_cross_if1 := workdir
+                / f"{zarr.stem}-cross-chassis{chassis}-if1.csv",
+                mode="w",
+            ) as f_cross_if1,
+            open(
+                csv_auto_if2 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if2.csv",
+                mode="w",
+            ) as f_auto_if2,
+            open(
+                csv_cross_if2 := workdir
+                / f"{zarr.stem}-cross-chassis{chassis}-if2.csv",
+                mode="w",
+            ) as f_cross_if2,
+        ):
+            if sync is not None:
+                try:
+                    sync.wait(timeout)
+                except BrokenBarrierError:
+                    return zarr.resolve()
+
             try:
-                sync.wait(timeout)
-            except BrokenBarrierError:
-                return zarr.resolve()
+                with tqdm(
+                    desc=f"Chassis {chassis}",
+                    disable=not progress,
+                    leave=True,
+                    position=max(int(progress) - 1, 0),
+                    total=None if isinstance(duration, Event) else int(duration),
+                    unit="s",
+                ) as bar:
+                    cycle = 0
+                    while True:
+                        if isinstance(duration, Event):
+                            if duration.is_set():
+                                LOGGER.debug("Data acquisition finished by event.")
+                                break
+                        else:
+                            if cycle >= duration:
+                                LOGGER.debug("Data acquisition finished by duration.")
+                                break
 
-        try:
-            cycle = 0
-            while True:
-                if isinstance(duration, Event):
-                    if duration.is_set():
-                        LOGGER.debug("Data acquisition finished by event.")
-                        break
-                else:
-                    if cycle >= duration:
-                        LOGGER.debug("Data acquisition finished by duration.")
-                        break
+                        time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
+                        result = run(
+                            # for interface 1
+                            f"./get_corr_rslt.py --In 1",
+                            "sleep 1",
+                            f"cat {CSV_AUTO}",
+                            f"cat {CSV_CROSS}",
+                            # for interface 2
+                            f"./get_corr_rslt.py --In 3",
+                            "sleep 1",
+                            f"cat {CSV_AUTO}",
+                            f"cat {CSV_CROSS}",
+                            chassis=chassis,
+                            timeout=timeout,
+                        )
+                        result.check_returncode()
+                        rows = result.stdout.split()
 
-                time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
-                result = run(
-                    # for interface 1
-                    f"./get_corr_rslt.py --In 1",
-                    "sleep 1",
-                    f"cat {CSV_AUTO}",
-                    f"cat {CSV_CROSS}",
-                    # for interface 2
-                    f"./get_corr_rslt.py --In 3",
-                    "sleep 1",
-                    f"cat {CSV_AUTO}",
-                    f"cat {CSV_CROSS}",
-                    chassis=chassis,
-                    timeout=timeout,
-                )
-                result.check_returncode()
-                rows = result.stdout.split()
+                        # write header
+                        if cycle == 0:
+                            f_auto_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
+                            f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
+                            f_auto_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
+                            f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
 
-                # write header
-                if cycle == 0:
-                    f_auto_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
-                    f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
-                    f_auto_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
-                    f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
+                        # write data
+                        for ch in range(CHAN_TOTAL):
+                            f_auto_if1.write(
+                                f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n"
+                            )
+                            f_cross_if1.write(
+                                f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n"
+                            )
+                            f_auto_if2.write(
+                                f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n"
+                            )
+                            f_cross_if2.write(
+                                f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n"
+                            )
 
-                # write data
-                for ch in range(CHAN_TOTAL):
-                    f_auto_if1.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n"
-                    )
-                    f_cross_if1.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n"
-                    )
-                    f_auto_if2.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n"
-                    )
-                    f_cross_if2.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n"
-                    )
-
-                bar.update(1)
-                cycle += 1
-        except KeyboardInterrupt:
-            LOGGER.warning("Data acquisition interrupted by user.")
-        finally:
-            f_auto_if1.flush()
-            f_cross_if1.flush()
-            f_auto_if2.flush()
-            f_cross_if2.flush()
+                        bar.update(1)
+                        cycle += 1
+            except KeyboardInterrupt:
+                LOGGER.warning("Data acquisition interrupted by user.")
 
         ds_if1, ds_if2 = xr.align(
             open_csvs(
