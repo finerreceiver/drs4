@@ -48,11 +48,11 @@ def cross(
     *,
     # for measurement (required)
     chassis: Chassis,
-    duration: Event | int,
+    cycles: Event | int,
     # for measurement (optional)
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
-    integ_time: IntegTime = 100,
+    integ_time: IntegTime = 1000,
     signal_if: Interface | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
@@ -178,18 +178,18 @@ def cross(
                     disable=not progress,
                     leave=True,
                     position=max(int(progress) - 1, 0),
-                    total=None if isinstance(duration, Event) else int(duration),
-                    unit="s",
+                    total=None if isinstance(cycles, Event) else int(cycles),
+                    unit="cycle",
                 ) as bar:
                     cycle = 0
                     while True:
-                        if isinstance(duration, Event):
-                            if duration.is_set():
+                        if isinstance(cycles, Event):
+                            if cycles.is_set():
                                 LOGGER.debug("Data acquisition finished by event.")
                                 break
                         else:
-                            if cycle >= duration:
-                                LOGGER.debug("Data acquisition finished by duration.")
+                            if cycle >= cycles:
+                                LOGGER.debug("Data acquisition finished by cycles.")
                                 break
 
                         time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
@@ -349,11 +349,11 @@ def crosses(
     *,
     # for measurement (required)
     chasses: Sequence[Chassis],
-    duration: Event | int,
+    cycles: Event | int,
     # for measurement (optional)
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
-    integ_time: IntegTime = 100,
+    integ_time: IntegTime = 1000,
     signal_if: Interface | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
@@ -389,7 +389,7 @@ def crosses(
     if (zarr := Path(zarr)).exists() and not append and not overwrite:
         raise FileExistsError(zarr)
 
-    interrupt = duration if isinstance(duration, Event) else Event()
+    interrupt = cycles if isinstance(cycles, Event) else Event()
     chasses = sorted(set(chasses))
     sync = Barrier(len(chasses) + 1)
 
@@ -401,7 +401,7 @@ def crosses(
                 cross,
                 # for measurement (required)
                 chassis=chassis,
-                duration=interrupt,
+                cycles=interrupt,
                 # for measurement (optional)
                 freq_range_if1=freq_range_if1,
                 freq_range_if2=freq_range_if2,
@@ -430,8 +430,9 @@ def crosses(
         try:
             sync.wait(timeout=timeout)
 
-            if isinstance(duration, int):
-                interrupt.wait(duration)
+            if isinstance(cycles, int):
+                while not all(future.done() for future in futures):
+                    sleep(1)
             else:
                 interrupt.wait()
         except BrokenBarrierError:
