@@ -153,18 +153,20 @@ def cross(
                 mode="w",
             ) as f_auto_if1,
             open(
-                csv_cross_if1 := workdir
-                / f"{zarr.stem}-cross-chassis{chassis}-if1.csv",
+                # fmt: off
+                csv_cross_if1 := workdir / f"{zarr.stem}-cross-chassis{chassis}-if1.csv",
                 mode="w",
+                # fmt: on
             ) as f_cross_if1,
             open(
                 csv_auto_if2 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if2.csv",
                 mode="w",
             ) as f_auto_if2,
             open(
-                csv_cross_if2 := workdir
-                / f"{zarr.stem}-cross-chassis{chassis}-if2.csv",
+                # fmt: off
+                csv_cross_if2 := workdir / f"{zarr.stem}-cross-chassis{chassis}-if2.csv",
                 mode="w",
+                # fmt: on
             ) as f_cross_if2,
         ):
             if start is not None:
@@ -220,18 +222,12 @@ def cross(
 
                         # write data
                         for ch in range(CHAN_TOTAL):
-                            f_auto_if1.write(
-                                f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n"
-                            )
-                            f_cross_if1.write(
-                                f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n"
-                            )
-                            f_auto_if2.write(
-                                f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n"
-                            )
-                            f_cross_if2.write(
-                                f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n"
-                            )
+                            # fmt: off
+                            f_auto_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n")
+                            f_cross_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n")
+                            f_auto_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n")
+                            f_cross_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n")
+                            # fmt: on
 
                         bar.update(1)
                         cycle += 1
