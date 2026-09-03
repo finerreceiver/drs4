@@ -48,8 +48,8 @@ def cross(
     *,
     # for measurement (required)
     chassis: Chassis,
-    cycles: Event | int,
     # for measurement (optional)
+    cycles: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 1000,
@@ -72,7 +72,8 @@ def cross(
     settings: bool = True,
     timeout: float | None = None,
     # for external synchronization (optional)
-    sync: Barrier | None = None,
+    start: Barrier | None = None,
+    stop: Event | None = None,
 ) -> Path:
     """"""
     if ctrl_addr is None:
@@ -166,9 +167,9 @@ def cross(
                 mode="w",
             ) as f_cross_if2,
         ):
-            if sync is not None:
+            if start is not None:
                 try:
-                    sync.wait(timeout)
+                    start.wait(timeout)
                 except BrokenBarrierError:
                     return zarr.resolve()
 
@@ -178,19 +179,19 @@ def cross(
                     disable=not progress,
                     leave=True,
                     position=max(int(progress) - 1, 0),
-                    total=None if isinstance(cycles, Event) else int(cycles),
+                    total=cycles,
                     unit="cycle",
                 ) as bar:
                     cycle = 0
+
                     while True:
-                        if isinstance(cycles, Event):
-                            if cycles.is_set():
-                                LOGGER.debug("Data acquisition finished by event.")
-                                break
-                        else:
-                            if cycle >= cycles:
-                                LOGGER.debug("Data acquisition finished by cycles.")
-                                break
+                        if stop is not None and stop.is_set():
+                            LOGGER.debug("Data acquisition finished by event.")
+                            break
+
+                        if cycles is not None and cycle >= cycles:
+                            LOGGER.debug("Data acquisition finished by cycles.")
+                            break
 
                         time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
                         result = run(
@@ -349,8 +350,8 @@ def crosses(
     *,
     # for measurement (required)
     chasses: Sequence[Chassis],
-    cycles: Event | int,
     # for measurement (optional)
+    cycles: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 1000,
@@ -370,6 +371,9 @@ def crosses(
     gain: xr.DataTree | StrPath | None = None,
     settings: bool = True,
     timeout: float | None = None,
+    # for external synchronization (optional)
+    start: Barrier | None = None,
+    stop: Event | None = None,
 ) -> Path:
     """"""
     if zarr is None:
@@ -389,9 +393,13 @@ def crosses(
     if (zarr := Path(zarr)).exists() and not append and not overwrite:
         raise FileExistsError(zarr)
 
-    interrupt = cycles if isinstance(cycles, Event) else Event()
     chasses = sorted(set(chasses))
-    sync = Barrier(len(chasses) + 1)
+
+    if start is None:
+        start = Barrier(len(chasses) + 1)
+
+    if stop is None:
+        stop = Event()
 
     with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
         futures: list[Future[Path]] = []
@@ -401,8 +409,8 @@ def crosses(
                 cross,
                 # for measurement (required)
                 chassis=chassis,
-                cycles=interrupt,
                 # for measurement (optional)
+                cycles=cycles,
                 freq_range_if1=freq_range_if1,
                 freq_range_if2=freq_range_if2,
                 integ_time=integ_time,
@@ -422,25 +430,26 @@ def crosses(
                 gain=gain,
                 settings=settings,
                 timeout=timeout,
-                # for external synchronization
-                sync=sync,
+                # for external synchronization (optional)
+                start=start,
+                stop=stop,
             )
             futures.append(future)
 
         try:
-            sync.wait(timeout=timeout)
+            start.wait(timeout=timeout)
 
-            if isinstance(cycles, int):
+            if cycles is None:
+                stop.wait()
+            else:
                 while not all(future.done() for future in futures):
                     sleep(1)
-            else:
-                interrupt.wait()
         except BrokenBarrierError:
             pass
         except KeyboardInterrupt:
-            sync.abort()
+            start.abort()
         finally:
-            interrupt.set()
+            stop.set()
 
             for future in futures:
                 future.result()

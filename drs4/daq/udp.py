@@ -59,8 +59,8 @@ def auto(
     *,
     # for measurement (required)
     chassis: Chassis,
-    duration: Event | int,
     # for measurement (optional)
+    duration: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 100,
@@ -88,7 +88,8 @@ def auto(
     settings: bool = True,
     timeout: float | None = None,
     # for external synchronization (optional)
-    sync: Barrier | None = None,
+    start: Barrier | None = None,
+    stop: Event | None = None,
 ) -> Path:
     """"""
     if ctrl_addr is None:
@@ -178,9 +179,9 @@ def auto(
 
     with set_workdir(workdir) as workdir:
         with ThreadPoolExecutor(max_workers=4) as executor:
-            if sync is not None:
+            if start is not None:
                 try:
-                    sync.wait(timeout)
+                    start.wait(timeout)
                 except BrokenBarrierError:
                     return zarr.resolve()
 
@@ -230,21 +231,23 @@ def auto(
                     disable=not progress,
                     leave=True,
                     position=max(int(progress) - 1, 0),
-                    total=None if isinstance(duration, Event) else int(duration),
+                    total=duration,
                     unit="s",
                 ) as bar:
-                    if isinstance(duration, Event):
-                        while not duration.wait(1.0):
-                            bar.update(1)
+                    elapsed = 0
 
+                    while True:
+                        if stop is not None and stop.is_set():
+                            LOGGER.debug("Data acquisition finished by event.")
+                            break
+
+                        if duration is not None and elapsed >= duration:
+                            LOGGER.debug("Data acquisition finished by duration.")
+                            break
+
+                        sleep(1)
                         bar.update(1)
-                        LOGGER.debug("Data acquisition finished by event.")
-                    else:
-                        for _ in range(int(duration)):
-                            sleep(1)
-                            bar.update(1)
-
-                        LOGGER.debug("Data acquisition finished by duration.")
+                        elapsed += 1
             except KeyboardInterrupt:
                 LOGGER.warning("Data acquisition interrupted by user.")
             finally:
@@ -369,8 +372,8 @@ def autos(
     *,
     # for measurement (required)
     chasses: Sequence[Chassis],
-    duration: Event | int,
     # for measurement (optional)
+    duration: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 100,
@@ -390,6 +393,9 @@ def autos(
     gain: xr.DataTree | StrPath | None = None,
     settings: bool = True,
     timeout: float | None = None,
+    # for external synchronization (optional)
+    start: Barrier | None = None,
+    stop: Event | None = None,
 ) -> Path:
     """"""
     if zarr is None:
@@ -409,9 +415,13 @@ def autos(
     if (zarr := Path(zarr)).exists() and not append and not overwrite:
         raise FileExistsError(zarr)
 
-    interrupt = duration if isinstance(duration, Event) else Event()
     chasses = sorted(set(chasses))
-    sync = Barrier(len(chasses) + 1)
+
+    if start is None:
+        start = Barrier(len(chasses) + 1)
+
+    if stop is None:
+        stop = Event()
 
     with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
         futures: list[Future[Path]] = []
@@ -421,8 +431,8 @@ def autos(
                 auto,
                 # for measurement (required)
                 chassis=chassis,
-                duration=interrupt,
                 # for measurement (optional)
+                duration=duration,
                 freq_range_if1=freq_range_if1,
                 freq_range_if2=freq_range_if2,
                 integ_time=integ_time,
@@ -443,23 +453,25 @@ def autos(
                 settings=settings,
                 timeout=timeout,
                 # for external synchronization (optional)
-                sync=sync,
+                start=start,
+                stop=stop,
             )
             futures.append(future)
 
         try:
-            sync.wait(timeout=timeout)
+            start.wait(timeout=timeout)
 
-            if isinstance(duration, int):
-                interrupt.wait(duration)
+            if duration is None:
+                stop.wait()
             else:
-                interrupt.wait()
+                while not all(future.done() for future in futures):
+                    sleep(1)
         except BrokenBarrierError:
             pass
         except KeyboardInterrupt:
-            sync.abort()
+            start.abort()
         finally:
-            interrupt.set()
+            stop.set()
 
             for future in futures:
                 future.result()
