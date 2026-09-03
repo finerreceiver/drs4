@@ -337,7 +337,7 @@ def cross(
             ds_if2.chunk(ZARR_CHUNKS).to_zarr(
                 zarr,
                 group=("/" / group_if2).as_posix(),
-                mode="a",
+                mode="w",
                 encoding=encoding_if2,
                 consolidated=False,
                 safe_chunks=False,
