@@ -56,10 +56,10 @@ filterwarnings("ignore", category=FutureWarning)
 
 
 def auto(
-    *,
     # for measurement (required)
     chassis: Chassis,
     # for measurement (optional)
+    *,
     duration: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
@@ -369,10 +369,10 @@ def auto(
 
 
 def autos(
-    *,
     # for measurement (required)
     chasses: Sequence[Chassis],
     # for measurement (optional)
+    *,
     duration: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",

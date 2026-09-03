@@ -45,10 +45,10 @@ filterwarnings("ignore", category=FutureWarning)
 
 
 def cross(
-    *,
     # for measurement (required)
     chassis: Chassis,
     # for measurement (optional)
+    *,
     cycles: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
@@ -347,10 +347,10 @@ def cross(
 
 
 def crosses(
-    *,
     # for measurement (required)
     chasses: Sequence[Chassis],
     # for measurement (optional)
+    *,
     cycles: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
