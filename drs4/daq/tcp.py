@@ -1,14 +1,17 @@
-__all__ = ["cross"]
+__all__ = ["cross", "crosses"]
 
 
 # standard library
+from collections.abc import Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from logging import getLogger
 from os import getenv
 from pathlib import Path
+from threading import Barrier, BrokenBarrierError, Event
 from time import sleep
 from typing import Any
-from warnings import catch_warnings, simplefilter
+from warnings import filterwarnings
 
 # dependencies
 import xarray as xr
@@ -16,14 +19,10 @@ from tqdm import tqdm
 from ..ctrl.self import run, set_gain
 from ..specs.common import (
     CHAN_TOTAL,
-    CSV_AUTOS_FORMAT,
-    CSV_CROSS_FORMAT,
     ENV_CTRL_ADDR,
     ENV_CTRL_USER,
-    OBSID_FORMAT,
     ZARR_CHUNKS,
     ZARR_ENCODING,
-    ZARR_FORMAT,
     ZARR_SHARDS,
     Channel,
     Chassis,
@@ -37,22 +36,23 @@ from ..specs.ms import open_csvs
 from ..specs.csv import TIME_FORMAT
 from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir, unique
 
-# constants
-CSV_AUTOS = "~/DRS4/mrdsppy/output/new_pow.csv"
+# global settings
+CSV_AUTO = "~/DRS4/mrdsppy/output/new_pow.csv"
 CSV_CROSS = "~/DRS4/mrdsppy/output/new_phase.csv"
-CSV_ROW_TOTAL = CHAN_TOTAL + 1  # 1 means header
+CSV_ROW_TOTAL = CHAN_TOTAL + 1  # '1' indicates header row
 LOGGER = getLogger(__name__)
+filterwarnings("ignore", category=FutureWarning)
 
 
 def cross(
-    *,
     # for measurement (required)
     chassis: Chassis,
-    duration: int,
     # for measurement (optional)
+    *,
+    cycles: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
-    integ_time: IntegTime = 100,
+    integ_time: IntegTime = 1000,
     signal_if: Interface | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
@@ -61,21 +61,21 @@ def cross(
     integrate: bool = False,
     join: XarrayJoin = "inner",
     overwrite: bool = False,
-    progress: bool = False,
+    progress: bool | int = False,
     workdir: StrPath | None = None,
     zarr: StrPath | None = None,
     # for DRS4 settings (optional)
+    ctrl_addr: str | None = None,
+    ctrl_user: str | None = None,
     dsp_mode: DSPMode = "IQ",
     gain: xr.DataTree | StrPath | None = None,
     settings: bool = True,
-    # for connection (optional)
-    ctrl_addr: str | None = None,
-    ctrl_user: str | None = None,
     timeout: float | None = None,
+    # for external synchronization (optional)
+    start: Barrier | None = None,
+    stop: Event | None = None,
 ) -> Path:
     """"""
-    obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
-
     if ctrl_addr is None:
         ctrl_addr = getenv(ENV_CTRL_ADDR.format(chassis), "")
 
@@ -83,7 +83,8 @@ def cross(
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
     if zarr is None:
-        zarr = ZARR_FORMAT.format(obsid, chassis)
+        now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        zarr = f"drs4-{now}.zarr"
 
     LOGGER.debug("(")
 
@@ -95,27 +96,18 @@ def cross(
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
 
-    if chassis not in (1, 2):
-        raise ValueError("Chassis number must be 1|2.")
-
-    if freq_range_if1 not in ("inner", "outer"):
-        raise ValueError("Frequency range must be inner|outer.")
-
-    if freq_range_if2 not in ("inner", "outer"):
-        raise ValueError("Frequency range must be inner|outer.")
-
-    if integ_time not in (100, 200, 500, 1000):
-        raise ValueError("Spectral integration time must be 100|200|500|1000.")
-
     if (zarr := Path(zarr)).exists() and not append and not overwrite:
         raise FileExistsError(zarr)
 
+    group_if1 = Path(f"chassis{chassis}") / "if1"
+    group_if2 = Path(f"chassis{chassis}") / "if2"
+
     if isinstance(gain, xr.DataTree):
-        gain_if1 = gain["/if1"].to_dataset()
-        gain_if2 = gain["/if2"].to_dataset()
+        gain_if1 = gain[("/" / group_if1).as_posix()].to_dataset()
+        gain_if2 = gain[("/" / group_if2).as_posix()].to_dataset()
     elif is_strpath(gain):
-        gain_if1 = Path(gain) / "if1"
-        gain_if2 = Path(gain) / "if2"
+        gain_if1 = Path(gain) / group_if1
+        gain_if2 = Path(gain) / group_if2
     elif gain is None:
         gain_if1 = None
         gain_if2 = None
@@ -154,80 +146,97 @@ def cross(
         result.check_returncode()
         sleep(1.5)
 
-    with (
-        set_workdir(workdir) as workdir,
-        tqdm(disable=not progress, total=int(duration), unit="s") as bar,
-        open(
-            csv_autos_if1 := workdir / CSV_AUTOS_FORMAT.format(obsid, chassis, 1),
-            mode="w",
-        ) as f_autos_if1,
-        open(
-            csv_cross_if1 := workdir / CSV_CROSS_FORMAT.format(obsid, chassis, 1),
-            mode="w",
-        ) as f_cross_if1,
-        open(
-            csv_autos_if2 := workdir / CSV_AUTOS_FORMAT.format(obsid, chassis, 2),
-            mode="w",
-        ) as f_autos_if2,
-        open(
-            csv_cross_if2 := workdir / CSV_CROSS_FORMAT.format(obsid, chassis, 2),
-            mode="w",
-        ) as f_cross_if2,
-    ):
-        try:
-            for cycle in range(duration):
-                time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
-                result = run(
-                    # for interface 1
-                    f"./get_corr_rslt.py --In 1",
-                    "sleep 1",
-                    f"cat {CSV_AUTOS}",
-                    f"cat {CSV_CROSS}",
-                    # for interface 2
-                    f"./get_corr_rslt.py --In 3",
-                    "sleep 1",
-                    f"cat {CSV_AUTOS}",
-                    f"cat {CSV_CROSS}",
-                    chassis=chassis,
-                    timeout=timeout,
-                )
-                result.check_returncode()
-                rows = result.stdout.split()
+    with set_workdir(workdir) as workdir:
+        with (
+            open(
+                csv_auto_if1 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if1.csv",
+                mode="w",
+            ) as f_auto_if1,
+            open(
+                # fmt: off
+                csv_cross_if1 := workdir / f"{zarr.stem}-cross-chassis{chassis}-if1.csv",
+                mode="w",
+                # fmt: on
+            ) as f_cross_if1,
+            open(
+                csv_auto_if2 := workdir / f"{zarr.stem}-auto-chassis{chassis}-if2.csv",
+                mode="w",
+            ) as f_auto_if2,
+            open(
+                # fmt: off
+                csv_cross_if2 := workdir / f"{zarr.stem}-cross-chassis{chassis}-if2.csv",
+                mode="w",
+                # fmt: on
+            ) as f_cross_if2,
+        ):
+            if start is not None:
+                try:
+                    start.wait(timeout)
+                except BrokenBarrierError:
+                    return zarr.resolve()
 
-                # write header
-                if cycle == 0:
-                    f_autos_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
-                    f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
-                    f_autos_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
-                    f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
+            try:
+                with tqdm(
+                    desc=f"Chassis {chassis}",
+                    disable=not progress,
+                    leave=True,
+                    position=max(int(progress) - 1, 0),
+                    total=cycles,
+                    unit="cycle",
+                ) as bar:
+                    cycle = 0
 
-                # write data
-                for ch in range(CHAN_TOTAL):
-                    f_autos_if1.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n"
-                    )
-                    f_cross_if1.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n"
-                    )
-                    f_autos_if2.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n"
-                    )
-                    f_cross_if2.write(
-                        f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n"
-                    )
+                    while True:
+                        if stop is not None and stop.is_set():
+                            LOGGER.debug("Data acquisition finished by event.")
+                            break
 
-                bar.update(1)
-        except KeyboardInterrupt:
-            LOGGER.warning("Data acquisition interrupted by user.")
-        finally:
-            f_autos_if1.flush()
-            f_cross_if1.flush()
-            f_autos_if2.flush()
-            f_cross_if2.flush()
+                        if cycles is not None and cycle >= cycles:
+                            LOGGER.debug("Data acquisition finished by cycles.")
+                            break
+
+                        time = datetime.now(timezone.utc).strftime(TIME_FORMAT)
+                        result = run(
+                            # for interface 1
+                            f"./get_corr_rslt.py --In 1",
+                            "sleep 1",
+                            f"cat {CSV_AUTO}",
+                            f"cat {CSV_CROSS}",
+                            # for interface 2
+                            f"./get_corr_rslt.py --In 3",
+                            "sleep 1",
+                            f"cat {CSV_AUTO}",
+                            f"cat {CSV_CROSS}",
+                            chassis=chassis,
+                            timeout=timeout,
+                        )
+                        result.check_returncode()
+                        rows = result.stdout.split()
+
+                        # write header
+                        if cycle == 0:
+                            f_auto_if1.write(f"time,{rows[CSV_ROW_TOTAL * 0 + 1]}\n")
+                            f_cross_if1.write(f"time,{rows[CSV_ROW_TOTAL * 1 + 1]}\n")
+                            f_auto_if2.write(f"time,{rows[CSV_ROW_TOTAL * 2 + 2]}\n")
+                            f_cross_if2.write(f"time,{rows[CSV_ROW_TOTAL * 3 + 2]}\n")
+
+                        # write data
+                        for ch in range(CHAN_TOTAL):
+                            # fmt: off
+                            f_auto_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 0 + 1) + ch + 1]}\n")
+                            f_cross_if1.write(f"{time},{rows[(CSV_ROW_TOTAL * 1 + 1) + ch + 1]}\n")
+                            f_auto_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 2 + 2) + ch + 1]}\n")
+                            f_cross_if2.write(f"{time},{rows[(CSV_ROW_TOTAL * 3 + 2) + ch + 1]}\n")
+                            # fmt: on
+
+                        bar.update(1)
+                        cycle += 1
+            except KeyboardInterrupt:
+                LOGGER.warning("Data acquisition interrupted by user.")
 
         ds_if1, ds_if2 = xr.align(
             open_csvs(
-                csv_autos_if1,
+                csv_auto_if1,
                 csv_cross_if1,
                 # for measurement (required)
                 chassis=chassis,
@@ -239,7 +248,7 @@ def cross(
                 signal_chan=signal_chan if signal_if == 1 else None,
             ),
             open_csvs(
-                csv_autos_if2,
+                csv_auto_if2,
                 csv_cross_if2,
                 # for measurement (required)
                 chassis=chassis,
@@ -291,38 +300,154 @@ def cross(
                 for dim in var.dims
                 # fmt: on
             )
-        with catch_warnings():
-            simplefilter("ignore", category=FutureWarning)
 
-            if zarr.exists() and append:
-                ds_if1.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if1",
-                    mode="a",
-                    append_dim="time",
-                    consolidated=False,
-                )
-                ds_if2.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if2",
-                    mode="a",
-                    append_dim="time",
-                    consolidated=False,
-                )
-            else:
-                ds_if1.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if1",
-                    mode="w",
-                    encoding=encoding_if1,
-                    consolidated=False,
-                )
-                ds_if2.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if2",
-                    mode="a",
-                    encoding=encoding_if2,
-                    consolidated=False,
-                )
+        if (zarr / group_if1).exists() and append:
+            ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if1).as_posix(),
+                mode="a",
+                append_dim="time",
+                consolidated=False,
+                safe_chunks=False,
+            )
+        else:
+            ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if1).as_posix(),
+                mode="w",
+                encoding=encoding_if1,
+                consolidated=False,
+                safe_chunks=False,
+            )
+
+        if (zarr / group_if2).exists() and append:
+            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if2).as_posix(),
+                mode="a",
+                append_dim="time",
+                consolidated=False,
+                safe_chunks=False,
+            )
+        else:
+            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if2).as_posix(),
+                mode="w",
+                encoding=encoding_if2,
+                consolidated=False,
+                safe_chunks=False,
+            )
 
         return zarr.resolve()
+
+
+def crosses(
+    # for measurement (required)
+    chasses: Sequence[Chassis],
+    # for measurement (optional)
+    *,
+    cycles: int | None = None,
+    freq_range_if1: FreqRange = "inner",
+    freq_range_if2: FreqRange = "outer",
+    integ_time: IntegTime = 1000,
+    signal_if: Interface | None = None,
+    signal_sb: SideBand | None = None,
+    signal_chan: Channel | None = None,
+    # for file saving (optional)
+    append: bool = False,
+    integrate: bool = False,
+    join: XarrayJoin = "inner",
+    overwrite: bool = False,
+    progress: bool = False,
+    workdir: StrPath | None = None,
+    zarr: StrPath | None = None,
+    # for DRS4 settings (optional)
+    dsp_mode: DSPMode = "IQ",
+    gain: xr.DataTree | StrPath | None = None,
+    settings: bool = True,
+    timeout: float | None = None,
+    # for external synchronization (optional)
+    start: Barrier | None = None,
+    stop: Event | None = None,
+) -> Path:
+    """"""
+    if zarr is None:
+        now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        zarr = f"drs4-{now}.zarr"
+
+    LOGGER.debug("(")
+
+    for key, val in locals().items():
+        LOGGER.debug(f"  {key}: {val!r}")
+
+    LOGGER.debug(")")
+
+    if append and overwrite:
+        raise ValueError("Append and overwrite cannot be enabled at once.")
+
+    if (zarr := Path(zarr)).exists() and not append and not overwrite:
+        raise FileExistsError(zarr)
+
+    chasses = sorted(set(chasses))
+
+    if start is None:
+        start = Barrier(len(chasses) + 1)
+
+    if stop is None:
+        stop = Event()
+
+    with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
+        futures: list[Future[Path]] = []
+
+        for n, chassis in enumerate(chasses):
+            future = executor.submit(
+                cross,
+                # for measurement (required)
+                chassis=chassis,
+                # for measurement (optional)
+                cycles=cycles,
+                freq_range_if1=freq_range_if1,
+                freq_range_if2=freq_range_if2,
+                integ_time=integ_time,
+                signal_if=signal_if,
+                signal_sb=signal_sb,
+                signal_chan=signal_chan,
+                # for file saving (optional)
+                append=append,
+                integrate=integrate,
+                join=join,
+                overwrite=overwrite,
+                progress=n + 1 if progress else False,
+                workdir=workdir,
+                zarr=zarr,
+                # for DRS4 settings (optional)
+                dsp_mode=dsp_mode,
+                gain=gain,
+                settings=settings,
+                timeout=timeout,
+                # for external synchronization (optional)
+                start=start,
+                stop=stop,
+            )
+            futures.append(future)
+
+        try:
+            start.wait(timeout=timeout)
+
+            if cycles is None:
+                stop.wait()
+            else:
+                while not all(future.done() for future in futures):
+                    sleep(1)
+        except BrokenBarrierError:
+            pass
+        except KeyboardInterrupt:
+            start.abort()
+        finally:
+            stop.set()
+
+            for future in futures:
+                future.result()
+
+    return zarr.resolve()

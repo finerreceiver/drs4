@@ -1,4 +1,4 @@
-__all__ = ["auto", "cross", "tcp", "udp"]
+__all__ = ["auto", "autos", "cross", "crosses", "tcp", "udp"]
 
 
 # submodules
@@ -6,5 +6,5 @@ from . import tcp
 from . import udp
 
 # aliases
-from .tcp import cross
-from .udp import auto
+from .tcp import cross, crosses
+from .udp import auto, autos

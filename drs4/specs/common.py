@@ -20,13 +20,8 @@ __all__ = [
     "FREQ_INNER",
     "FREQ_OUTER",
     # constants (file format)
-    "CSV_AUTOS_FORMAT",
-    "CSV_CROSS_FORMAT",
-    "OBSID_FORMAT",
-    "VDIF_FORMAT",
     "ZARR_CHUNKS",
     "ZARR_ENCODING",
-    "ZARR_FORMAT",
     "ZARR_SHARDS",
     # constants (environment variable)
     "ENV_CTRL_ADDR",
@@ -98,10 +93,6 @@ FREQ_INNER = FREQ_INTERVAL * np.arange(CHAN_TOTAL * 0, CHAN_TOTAL * 1)  # GHz
 FREQ_OUTER = FREQ_INTERVAL * (np.arange(CHAN_TOTAL * 1, CHAN_TOTAL * 2) + 1)  # GHz
 
 # constants (file format)
-CSV_AUTOS_FORMAT = "drs4-{0}-chassis{1}-autos-if{2}.csv"
-CSV_CROSS_FORMAT = "drs4-{0}-chassis{1}-cross-if{2}.csv"
-OBSID_FORMAT = "%Y%m%dT%H%M%SZ"
-VDIF_FORMAT = "drs4-{0}-chassis{1}-in{2}.vdif"
 ZARR_CHUNKS = {"time": 600, "chan": CHAN_TOTAL}
 ZARR_ENCODING = {
     "time": {
@@ -109,7 +100,6 @@ ZARR_ENCODING = {
         "units": "nanoseconds since 2000-01-01",
     }
 }
-ZARR_FORMAT = "drs4-{0}-chassis{1}.zarr"
 ZARR_SHARDS = {"time": 36000, "chan": CHAN_TOTAL}
 
 # constants (environment variable)

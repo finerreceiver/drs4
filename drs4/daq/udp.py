@@ -1,11 +1,11 @@
-__all__ = ["auto"]
+__all__ = ["auto", "autos"]
 
 
 # standard library
-from concurrent.futures import ProcessPoolExecutor
+from collections.abc import Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from logging import getLogger
-from multiprocessing import Manager
 from os import getenv
 from pathlib import Path
 from socket import (
@@ -17,10 +17,10 @@ from socket import (
     inet_aton,
     socket,
 )
-from threading import Event
+from threading import Barrier, BrokenBarrierError, Event
 from time import sleep
 from typing import Any
-from warnings import catch_warnings, simplefilter
+from warnings import filterwarnings
 
 # dependencies
 import xarray as xr
@@ -34,11 +34,8 @@ from ..specs.common import (
     ENV_DEST_PORT2,
     ENV_DEST_PORT3,
     ENV_DEST_PORT4,
-    OBSID_FORMAT,
-    VDIF_FORMAT,
     ZARR_CHUNKS,
     ZARR_ENCODING,
-    ZARR_FORMAT,
     ZARR_SHARDS,
     Channel,
     Chassis,
@@ -52,17 +49,18 @@ from ..specs.ms import open_vdifs
 from ..specs.vdif import VDIF_FRAME_BYTES
 from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir, unique
 
-# constants
+# global settings
 GROUP = "239.0.0.1"
 LOGGER = getLogger(__name__)
+filterwarnings("ignore", category=FutureWarning)
 
 
 def auto(
-    *,
     # for measurement (required)
     chassis: Chassis,
-    duration: int,
     # for measurement (optional)
+    *,
+    duration: int | None = None,
     freq_range_if1: FreqRange = "inner",
     freq_range_if2: FreqRange = "outer",
     integ_time: IntegTime = 100,
@@ -74,14 +72,10 @@ def auto(
     integrate: bool = False,
     join: XarrayJoin = "inner",
     overwrite: bool = False,
-    progress: bool = False,
+    progress: bool | int = False,
     workdir: StrPath | None = None,
     zarr: StrPath | None = None,
     # for DRS4 settings (optional)
-    dsp_mode: DSPMode = "SB",
-    gain: xr.DataTree | StrPath | None = None,
-    settings: bool = True,
-    # for connection (optional)
     ctrl_addr: str | None = None,
     ctrl_user: str | None = None,
     dest_addr: str | None = None,
@@ -89,11 +83,15 @@ def auto(
     dest_port2: int | None = None,
     dest_port3: int | None = None,
     dest_port4: int | None = None,
+    dsp_mode: DSPMode = "SB",
+    gain: xr.DataTree | StrPath | None = None,
+    settings: bool = True,
     timeout: float | None = None,
+    # for external synchronization (optional)
+    start: Barrier | None = None,
+    stop: Event | None = None,
 ) -> Path:
     """"""
-    obsid = datetime.now(timezone.utc).strftime(OBSID_FORMAT)
-
     if ctrl_addr is None:
         ctrl_addr = getenv(ENV_CTRL_ADDR.format(chassis), "")
 
@@ -116,7 +114,8 @@ def auto(
         dest_port4 = int(getenv(ENV_DEST_PORT4.format(chassis), ""))
 
     if zarr is None:
-        zarr = ZARR_FORMAT.format(obsid, chassis)
+        now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        zarr = f"drs4-{now}.zarr"
 
     LOGGER.debug("(")
 
@@ -128,27 +127,18 @@ def auto(
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
 
-    if chassis not in (1, 2):
-        raise ValueError("Chassis number must be 1|2.")
-
-    if freq_range_if1 not in ("inner", "outer"):
-        raise ValueError("Frequency range must be inner|outer.")
-
-    if freq_range_if2 not in ("inner", "outer"):
-        raise ValueError("Frequency range must be inner|outer.")
-
-    if integ_time not in (100, 200, 500, 1000):
-        raise ValueError("Spectral integration time must be 100|200|500|1000.")
-
     if (zarr := Path(zarr)).exists() and not append and not overwrite:
         raise FileExistsError(zarr)
 
+    group_if1 = Path(f"chassis{chassis}") / "if1"
+    group_if2 = Path(f"chassis{chassis}") / "if2"
+
     if isinstance(gain, xr.DataTree):
-        gain_if1 = gain["/if1"].to_dataset()
-        gain_if2 = gain["/if2"].to_dataset()
+        gain_if1 = gain[("/" / group_if1).as_posix()].to_dataset()
+        gain_if2 = gain[("/" / group_if2).as_posix()].to_dataset()
     elif is_strpath(gain):
-        gain_if1 = Path(gain) / "if1"
-        gain_if2 = Path(gain) / "if2"
+        gain_if1 = Path(gain) / group_if1
+        gain_if2 = Path(gain) / group_if2
     elif gain is None:
         gain_if1 = None
         gain_if2 = None
@@ -187,58 +177,84 @@ def auto(
         result.check_returncode()
         sleep(1.5)
 
-    with (
-        Manager() as manager,
-        ProcessPoolExecutor(4) as executor,
-        set_workdir(workdir) as workdir,
-        tqdm(disable=not progress, total=int(duration), unit="s") as bar,
-    ):
-        cancel = manager.Event()
-        executor.submit(
-            dump,
-            vdif_in1 := workdir / VDIF_FORMAT.format(obsid, chassis, 1),
-            dest_addr=dest_addr,
-            dest_port=dest_port1,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
-        executor.submit(
-            dump,
-            vdif_in2 := workdir / VDIF_FORMAT.format(obsid, chassis, 2),
-            dest_addr=dest_addr,
-            dest_port=dest_port2,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
-        executor.submit(
-            dump,
-            vdif_in3 := workdir / VDIF_FORMAT.format(obsid, chassis, 3),
-            dest_addr=dest_addr,
-            dest_port=dest_port3,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
-        executor.submit(
-            dump,
-            vdif_in4 := workdir / VDIF_FORMAT.format(obsid, chassis, 4),
-            dest_addr=dest_addr,
-            dest_port=dest_port4,
-            cancel=cancel,
-            timeout=timeout,
-            overwrite=overwrite,
-        )
+    with set_workdir(workdir) as workdir:
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            if start is not None:
+                try:
+                    start.wait(timeout)
+                except BrokenBarrierError:
+                    return zarr.resolve()
 
-        try:
-            for _ in range(int(duration)):
-                sleep(1)
-                bar.update(1)
-        except KeyboardInterrupt:
-            LOGGER.warning("Data acquisition interrupted by user.")
-        finally:
-            cancel.set()
+            interrupt = Event()
+            futures = [
+                executor.submit(
+                    dump,
+                    vdif_in1 := workdir / f"{zarr.stem}-chassis{chassis}-in1.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port1,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+                executor.submit(
+                    dump,
+                    vdif_in2 := workdir / f"{zarr.stem}-chassis{chassis}-in2.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port2,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+                executor.submit(
+                    dump,
+                    vdif_in3 := workdir / f"{zarr.stem}-chassis{chassis}-in3.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port3,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+                executor.submit(
+                    dump,
+                    vdif_in4 := workdir / f"{zarr.stem}-chassis{chassis}-in4.vdif",
+                    dest_addr=dest_addr,
+                    dest_port=dest_port4,
+                    interrupt=interrupt,
+                    overwrite=overwrite,
+                    timeout=timeout,
+                ),
+            ]
+
+            try:
+                with tqdm(
+                    desc=f"Chassis {chassis}",
+                    disable=not progress,
+                    leave=True,
+                    position=max(int(progress) - 1, 0),
+                    total=duration,
+                    unit="s",
+                ) as bar:
+                    elapsed = 0
+
+                    while True:
+                        if stop is not None and stop.is_set():
+                            LOGGER.debug("Data acquisition finished by event.")
+                            break
+
+                        if duration is not None and elapsed >= duration:
+                            LOGGER.debug("Data acquisition finished by duration.")
+                            break
+
+                        sleep(1)
+                        bar.update(1)
+                        elapsed += 1
+            except KeyboardInterrupt:
+                LOGGER.warning("Data acquisition interrupted by user.")
+            finally:
+                interrupt.set()
+
+                for future in futures:
+                    future.result()
 
         ds_if1, ds_if2 = xr.align(
             open_vdifs(
@@ -311,57 +327,169 @@ def auto(
                 # fmt: on
             )
 
-        with catch_warnings():
-            simplefilter("ignore", category=FutureWarning)
+        if (zarr / group_if1).exists() and append:
+            ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if1).as_posix(),
+                mode="a",
+                append_dim="time",
+                consolidated=False,
+                safe_chunks=False,
+            )
+        else:
+            ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if1).as_posix(),
+                mode="w",
+                encoding=encoding_if1,
+                consolidated=False,
+                safe_chunks=False,
+            )
 
-            if zarr.exists() and append:
-                ds_if1.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if1",
-                    mode="a",
-                    append_dim="time",
-                    consolidated=False,
-                )
-                ds_if2.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if2",
-                    mode="a",
-                    append_dim="time",
-                    consolidated=False,
-                )
-            else:
-                ds_if1.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if1",
-                    mode="w",
-                    encoding=encoding_if1,
-                    consolidated=False,
-                )
-                ds_if2.chunk(ZARR_CHUNKS).to_zarr(
-                    zarr,
-                    group="/if2",
-                    mode="a",
-                    encoding=encoding_if2,
-                    consolidated=False,
-                )
+        if (zarr / group_if2).exists() and append:
+            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if2).as_posix(),
+                mode="a",
+                append_dim="time",
+                consolidated=False,
+                safe_chunks=False,
+            )
+        else:
+            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+                zarr,
+                group=("/" / group_if2).as_posix(),
+                mode="w",
+                encoding=encoding_if2,
+                consolidated=False,
+                safe_chunks=False,
+            )
 
         return zarr.resolve()
+
+
+def autos(
+    # for measurement (required)
+    chasses: Sequence[Chassis],
+    # for measurement (optional)
+    *,
+    duration: int | None = None,
+    freq_range_if1: FreqRange = "inner",
+    freq_range_if2: FreqRange = "outer",
+    integ_time: IntegTime = 100,
+    signal_if: Interface | None = None,
+    signal_sb: SideBand | None = None,
+    signal_chan: Channel | None = None,
+    # for file saving (optional)
+    append: bool = False,
+    integrate: bool = False,
+    join: XarrayJoin = "inner",
+    overwrite: bool = False,
+    progress: bool = False,
+    workdir: StrPath | None = None,
+    zarr: StrPath | None = None,
+    # for DRS4 settings (optional)
+    dsp_mode: DSPMode = "SB",
+    gain: xr.DataTree | StrPath | None = None,
+    settings: bool = True,
+    timeout: float | None = None,
+    # for external synchronization (optional)
+    start: Barrier | None = None,
+    stop: Event | None = None,
+) -> Path:
+    """"""
+    if zarr is None:
+        now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        zarr = f"drs4-{now}.zarr"
+
+    LOGGER.debug("(")
+
+    for key, val in locals().items():
+        LOGGER.debug(f"  {key}: {val!r}")
+
+    LOGGER.debug(")")
+
+    if append and overwrite:
+        raise ValueError("Append and overwrite cannot be enabled at once.")
+
+    if (zarr := Path(zarr)).exists() and not append and not overwrite:
+        raise FileExistsError(zarr)
+
+    chasses = sorted(set(chasses))
+
+    if start is None:
+        start = Barrier(len(chasses) + 1)
+
+    if stop is None:
+        stop = Event()
+
+    with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
+        futures: list[Future[Path]] = []
+
+        for n, chassis in enumerate(chasses):
+            future = executor.submit(
+                auto,
+                # for measurement (required)
+                chassis=chassis,
+                # for measurement (optional)
+                duration=duration,
+                freq_range_if1=freq_range_if1,
+                freq_range_if2=freq_range_if2,
+                integ_time=integ_time,
+                signal_if=signal_if,
+                signal_sb=signal_sb,
+                signal_chan=signal_chan,
+                # for file saving (optional)
+                append=append,
+                integrate=integrate,
+                join=join,
+                overwrite=overwrite,
+                progress=n + 1 if progress else False,
+                workdir=workdir,
+                zarr=zarr,
+                # for DRS4 settings (optional)
+                dsp_mode=dsp_mode,
+                gain=gain,
+                settings=settings,
+                timeout=timeout,
+                # for external synchronization (optional)
+                start=start,
+                stop=stop,
+            )
+            futures.append(future)
+
+        try:
+            start.wait(timeout=timeout)
+
+            if duration is None:
+                stop.wait()
+            else:
+                while not all(future.done() for future in futures):
+                    sleep(1)
+        except BrokenBarrierError:
+            pass
+        except KeyboardInterrupt:
+            start.abort()
+        finally:
+            stop.set()
+
+            for future in futures:
+                future.result()
+
+    return zarr.resolve()
 
 
 def dump(
     vdif: StrPath,
     /,
     *,
-    # for connection (required)
     dest_addr: str,
     dest_port: int,
-    # for connection (optional)
     group: str = GROUP,
-    # for file saving (optional)
-    cancel: Event | None = None,
-    timeout: float | None = None,
-    progress: bool = False,
+    interrupt: Event | None = None,
     overwrite: bool = False,
+    progress: bool | int = False,
+    timeout: float | None = None,
 ) -> None:
     """Receive and dump DRS4 data per input into a VDIF file.
 
@@ -370,10 +498,10 @@ def dump(
         dest_addr: Destination IP address.
         dest_port: Destination port number.
         group: Multicast group IP address.
-        cancel: Event object to cancel dumping.
+        interrupt: Event object to interrupt dumping.
         timeout: Timeout period in units of seconds.
-        progress: Whether to show the progress bar on screen.
         overwrite: Whether to overwrite the existing VDIF file.
+        progress: Whether to show the progress bar on screen.
 
     Raises:
         FileExistsError: Raised if overwrite is not allowed
@@ -391,7 +519,13 @@ def dump(
     with (
         open(vdif, "wb") as file,
         socket(type=SOCK_DGRAM) as sock,
-        tqdm(desc=prefix, disable=not progress, unit="byte") as bar,
+        tqdm(
+            desc=prefix,
+            disable=not progress,
+            leave=True,
+            position=max(int(progress) - 1, 0),
+            unit="byte",
+        ) as bar,
     ):
         # create socket
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -402,7 +536,7 @@ def dump(
         # start dumping
         LOGGER.debug(f"{prefix} Start dumping data.")
 
-        while cancel is None or not cancel.is_set():
+        while interrupt is None or not interrupt.is_set():
             frame, _ = sock.recvfrom(VDIF_FRAME_BYTES)
 
             if len(frame) == VDIF_FRAME_BYTES:
