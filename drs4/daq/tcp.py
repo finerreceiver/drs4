@@ -231,7 +231,7 @@ def cross(
             except KeyboardInterrupt:
                 LOGGER.warning("Data acquisition interrupted by user.")
 
-        ds_if1, ds_if2 = xr.align(
+        ms_if1, ms_if2 = xr.align(
             open_csvs(
                 csv_auto_if1,
                 csv_cross_if1,
@@ -259,7 +259,7 @@ def cross(
             join=join,
         )
 
-        return to_zarr(ds_if1, ds_if2, zarr, append=append, integrate=integrate)
+        return to_zarr(ms_if1, ms_if2, zarr, append=append, integrate=integrate)
 
 
 def crosses(

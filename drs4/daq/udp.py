@@ -253,7 +253,7 @@ def auto(
                 for future in futures:
                     future.result()
 
-        ds_if1, ds_if2 = xr.align(
+        ms_if1, ms_if2 = xr.align(
             open_vdifs(
                 vdif_in1,
                 vdif_in2,
@@ -285,7 +285,7 @@ def auto(
             join=join,
         )
 
-        return to_zarr(ds_if1, ds_if2, zarr, append=append, integrate=integrate)
+        return to_zarr(ms_if1, ms_if2, zarr, append=append, integrate=integrate)
 
 
 def autos(
