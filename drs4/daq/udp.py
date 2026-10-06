@@ -19,7 +19,6 @@ from socket import (
 )
 from threading import Barrier, BrokenBarrierError, Event
 from time import sleep
-from typing import Any
 from warnings import filterwarnings
 
 # dependencies
@@ -34,9 +33,6 @@ from ..specs.common import (
     ENV_DEST_PORT2,
     ENV_DEST_PORT3,
     ENV_DEST_PORT4,
-    ZARR_CHUNKS,
-    ZARR_ENCODING,
-    ZARR_SHARDS,
     Channel,
     Chassis,
     DSPMode,
@@ -45,9 +41,10 @@ from ..specs.common import (
     IntegTime,
     SideBand,
 )
+from .common import to_zarr
 from ..specs.ms import open_vdifs
 from ..specs.vdif import VDIF_FRAME_BYTES
-from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir, unique
+from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir
 
 # global settings
 GROUP = "239.0.0.1"
@@ -288,84 +285,7 @@ def auto(
             join=join,
         )
 
-        if integrate:
-            dim = {"time": ds_if1.sizes["time"]}
-            coord_func = {"signal_chan": unique, "signal_sb": unique}
-            ds_if1 = ds_if1.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
-            ds_if2 = ds_if2.coarsen(dim, coord_func=coord_func).mean()  # type: ignore
-
-        encoding_if1: dict[Any, Any] = ZARR_ENCODING.copy()
-        encoding_if2: dict[Any, Any] = ZARR_ENCODING.copy()
-
-        for name, var in ds_if1.variables.items():
-            encoding_if1.setdefault(name, {})
-            encoding_if1[name]["chunks"] = tuple(
-                # fmt: off
-                ZARR_CHUNKS.get(dim, var.sizes[dim]) # type: ignore
-                for dim in var.dims
-                # fmt: on
-            )
-            encoding_if1[name]["shards"] = tuple(
-                # fmt: off
-                ZARR_SHARDS.get(dim, var.sizes[dim]) # type: ignore
-                for dim in var.dims
-                # fmt: on
-            )
-
-        for name, var in ds_if2.variables.items():
-            encoding_if2.setdefault(name, {})
-            encoding_if2[name]["chunks"] = tuple(
-                # fmt: off
-                ZARR_CHUNKS.get(dim, var.sizes[dim]) # type: ignore
-                for dim in var.dims
-                # fmt: on
-            )
-            encoding_if2[name]["shards"] = tuple(
-                # fmt: off
-                ZARR_SHARDS.get(dim, var.sizes[dim]) # type: ignore
-                for dim in var.dims
-                # fmt: on
-            )
-
-        if (zarr / group_if1).exists() and append:
-            ds_if1.chunk(ZARR_SHARDS).to_zarr(
-                zarr,
-                group=("/" / group_if1).as_posix(),
-                mode="a",
-                append_dim="time",
-                consolidated=False,
-                safe_chunks=False,
-            )
-        else:
-            ds_if1.chunk(ZARR_SHARDS).to_zarr(
-                zarr,
-                group=("/" / group_if1).as_posix(),
-                mode="w",
-                encoding=encoding_if1,
-                consolidated=False,
-                safe_chunks=True,
-            )
-
-        if (zarr / group_if2).exists() and append:
-            ds_if2.chunk(ZARR_SHARDS).to_zarr(
-                zarr,
-                group=("/" / group_if2).as_posix(),
-                mode="a",
-                append_dim="time",
-                consolidated=False,
-                safe_chunks=False,
-            )
-        else:
-            ds_if2.chunk(ZARR_SHARDS).to_zarr(
-                zarr,
-                group=("/" / group_if2).as_posix(),
-                mode="a",
-                encoding=encoding_if2,
-                consolidated=False,
-                safe_chunks=True,
-            )
-
-        return zarr.resolve()
+        return to_zarr(ds_if1, ds_if2, zarr, append=append, integrate=integrate)
 
 
 def autos(
