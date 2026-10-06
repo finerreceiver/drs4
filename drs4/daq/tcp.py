@@ -302,7 +302,7 @@ def cross(
             )
 
         if (zarr / group_if1).exists() and append:
-            ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+            ds_if1.chunk(ZARR_SHARDS).to_zarr(
                 zarr,
                 group=("/" / group_if1).as_posix(),
                 mode="a",
@@ -311,17 +311,17 @@ def cross(
                 safe_chunks=False,
             )
         else:
-            ds_if1.chunk(ZARR_CHUNKS).to_zarr(
+            ds_if1.chunk(ZARR_SHARDS).to_zarr(
                 zarr,
                 group=("/" / group_if1).as_posix(),
                 mode="w",
                 encoding=encoding_if1,
                 consolidated=False,
-                safe_chunks=False,
+                safe_chunks=True,
             )
 
         if (zarr / group_if2).exists() and append:
-            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+            ds_if2.chunk(ZARR_SHARDS).to_zarr(
                 zarr,
                 group=("/" / group_if2).as_posix(),
                 mode="a",
@@ -330,13 +330,13 @@ def cross(
                 safe_chunks=False,
             )
         else:
-            ds_if2.chunk(ZARR_CHUNKS).to_zarr(
+            ds_if2.chunk(ZARR_SHARDS).to_zarr(
                 zarr,
                 group=("/" / group_if2).as_posix(),
-                mode="w",
+                mode="a",
                 encoding=encoding_if2,
                 consolidated=False,
-                safe_chunks=False,
+                safe_chunks=True,
             )
 
         return zarr.resolve()
