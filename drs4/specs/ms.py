@@ -28,20 +28,6 @@ from .csv import open_csv_auto, open_csv_cross
 from .vdif import open_vdif
 from ..utils import StrPath, XarrayJoin
 
-# type hints
-Freq = Annotated[
-    xs.Data[L["chan"], np.float64],
-    xs.attrs(long_name="Intermediate frequency", units="GHz"),
-]
-SignalChan = Annotated[
-    xs.Data[L["time"], np.int64],
-    xs.attrs(long_name="Signal channel number"),
-]
-SignalSB = Annotated[
-    xs.Data[L["time"], L["U3"]],
-    xs.attrs(long_name="Signal sideband"),
-]
-
 
 @dataclass
 class MS(xs.AsDataset):
@@ -55,13 +41,22 @@ class MS(xs.AsDataset):
     """Channel number (0-511)."""
 
     # coords
-    freq: Freq
+    freq: Annotated[
+        xs.Data[L["chan"], np.float64],
+        xs.attrs(long_name="Intermediate frequency", units="GHz"),
+    ]
     """Intermediate frequency in GHz."""
 
-    signal_sb: SignalSB
+    signal_sb: Annotated[
+        xs.Data[L["time"], L["U3"]],
+        xs.attrs(long_name="Signal sideband"),
+    ]
     """Signal sideband (USB|LSB|NA)."""
 
-    signal_chan: SignalChan
+    signal_chan: Annotated[
+        xs.Data[L["time"], np.int64],
+        xs.attrs(long_name="Signal channel number"),
+    ]
     """Signal channel number (0-511|-1)."""
 
     # vars

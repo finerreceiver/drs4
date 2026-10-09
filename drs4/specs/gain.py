@@ -12,22 +12,6 @@ import xarrayspecs as xs
 from .common import CHAN_TOTAL, Chan, SpecVersion
 from ..utils import StrPath
 
-# type hints
-GainUSB = Annotated[
-    xs.Data[L["chan"], np.complex128],
-    xs.attrs(
-        long_name="Complex gain of USB",
-        units="Arbitrary unit",
-    ),
-]
-GainLSB = Annotated[
-    xs.Data[L["chan"], np.complex128],
-    xs.attrs(
-        long_name="Complex gain of LSB",
-        units="Arbitrary unit",
-    ),
-]
-
 
 @dataclass
 class Gain(xs.AsDataset):
@@ -38,10 +22,16 @@ class Gain(xs.AsDataset):
     """Channel number (0-511)."""
 
     # vars
-    usb: GainUSB
+    usb: Annotated[
+        xs.Data[L["chan"], np.complex128],
+        xs.attrs(long_name="Complex gain of USB", units="Arbitrary unit"),
+    ]
     """Complex gain of USB."""
 
-    lsb: GainLSB
+    lsb: Annotated[
+        xs.Data[L["chan"], np.complex128],
+        xs.attrs(long_name="Complex gain of LSB", units="Arbitrary unit"),
+    ]
     """Complex gain of LSB."""
 
     # attrs

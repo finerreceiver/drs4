@@ -12,15 +12,6 @@ from numpy.typing import NDArray
 from .common import Chan, IntegTime, SpecVersion, Time
 from ..utils import StrPath, XarrayJoin
 
-# type hints
-Auto = Annotated[
-    xs.Data[tuple[L["time"], L["chan"]], np.float64],
-    xs.attrs(
-        long_name="Auto-correlation spectra",
-        units="Arbitrary unit",
-    ),
-]
-
 # constants
 CHAN_FIRST_HALF = np.arange(0, 256)
 CHAN_SECOND_HALF = np.arange(256, 512)
@@ -43,7 +34,10 @@ class VDIF(xs.AsDataArray):
     """Channel number (0-511)."""
 
     # vars
-    auto: Auto
+    auto: Annotated[
+        xs.Data[tuple[L["time"], L["chan"]], np.float64],
+        xs.attrs(long_name="Auto-correlation spectra", units="Arbitrary unit"),
+    ]
     """Auto-correlation spectra."""
 
     # attrs
