@@ -48,7 +48,7 @@ class MS(xs.AsDataset):
     """Intermediate frequency in GHz."""
 
     signal_sb: Annotated[
-        xs.Data[L["time"], L["U3"]],
+        xs.Data[L["time"], L["U4"]],
         xs.attrs(long_name="Signal sideband"),
     ]
     """Signal sideband (USB|LSB|NA)."""
