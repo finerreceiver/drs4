@@ -1,6 +1,6 @@
 [project]
 name = "drs4"
-version = "0.6.0"
+version = "0.7.0"
 description = "Control and data acquisition software for FINER/DRS4"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
@@ -54,14 +54,14 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "black>=25,<27",
-    "ipython>=8,<10",
-    "myst-parser>=4,<6",
+    "black>=26",
+    "ipython>=8",
+    "myst-parser>=4",
     "pandas-stubs>=2",
-    "pydata-sphinx-theme>=0.18,<1.0",
-    "pyright>=1,<2",
-    "pytest>=9,<10",
-    "sphinx>=8,<10",
+    "pydata-sphinx-theme>=0.19",
+    "pyright>=1",
+    "pytest>=9",
+    "sphinx>=8",
 ]
 
 [tool.pyright]

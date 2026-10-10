@@ -53,6 +53,7 @@ def cross(
     signal_if: Interface | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
+    state: str | None = None,
     # for file saving (optional)
     append: bool = False,
     integrate: bool = False,
@@ -243,6 +244,7 @@ def cross(
                 integ_time=integ_time,
                 signal_sb=signal_sb if signal_if == 1 else None,
                 signal_chan=signal_chan if signal_if == 1 else None,
+                state=state,
             ),
             open_csvs(
                 csv_auto_if2,
@@ -255,6 +257,7 @@ def cross(
                 integ_time=integ_time,
                 signal_sb=signal_sb if signal_if == 2 else None,
                 signal_chan=signal_chan if signal_if == 2 else None,
+                state=state,
             ),
             join=join,
         )
@@ -274,6 +277,7 @@ def crosses(
     signal_if: Interface | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
+    state: str | None = None,
     # for file saving (optional)
     append: bool = False,
     integrate: bool = False,
@@ -333,6 +337,7 @@ def crosses(
                 signal_if=signal_if,
                 signal_sb=signal_sb,
                 signal_chan=signal_chan,
+                state=state,
                 # for file saving (optional)
                 append=append,
                 integrate=integrate,

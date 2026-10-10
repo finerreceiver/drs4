@@ -28,20 +28,6 @@ from .csv import open_csv_auto, open_csv_cross
 from .vdif import open_vdif
 from ..utils import StrPath, XarrayJoin
 
-# type hints
-Freq = Annotated[
-    xs.Data[L["chan"], np.float64],
-    xs.attrs(long_name="Intermediate frequency", units="GHz"),
-]
-SignalChan = Annotated[
-    xs.Data[L["time"], np.int64],
-    xs.attrs(long_name="Signal channel number"),
-]
-SignalSB = Annotated[
-    xs.Data[L["time"], L["U3"]],
-    xs.attrs(long_name="Signal sideband"),
-]
-
 
 @dataclass
 class MS(xs.AsDataset):
@@ -55,14 +41,35 @@ class MS(xs.AsDataset):
     """Channel number (0-511)."""
 
     # coords
-    freq: Freq
+    freq: Annotated[
+        xs.Coord[L["chan"], np.float64],
+        xs.attrs(long_name="Intermediate frequency", units="GHz"),
+    ]
     """Intermediate frequency in GHz."""
 
-    signal_sb: SignalSB
+    integ_time: Annotated[
+        xs.Coord[L["time"], np.int64],
+        xs.attrs(long_name="Spectral integration time", units="ms"),
+    ]
+    """Spectral integration time in ms."""
+
+    signal_sb: Annotated[
+        xs.Coord[L["time"], L["U4"]],
+        xs.attrs(long_name="Signal sideband"),
+    ]
     """Signal sideband (USB|LSB|NA)."""
 
-    signal_chan: SignalChan
+    signal_chan: Annotated[
+        xs.Coord[L["time"], np.int64],
+        xs.attrs(long_name="Signal channel number"),
+    ]
     """Signal channel number (0-511|-1)."""
+
+    state: Annotated[
+        xs.Coord[L["time"], L["U8"]],
+        xs.attrs(long_name="Measurement state"),
+    ]
+    """Measurement state (Unicode string up to 8 chars.)"""
 
     # vars
     auto_usb: AutoUSB
@@ -81,9 +88,6 @@ class MS(xs.AsDataset):
     interface: Interface
     """Interface (IF) number of DRS4 (1|2)."""
 
-    integ_time: IntegTime
-    """Spectral integration time in ms (100|200|500|1000)."""
-
     spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
 
@@ -101,6 +105,7 @@ def open_csvs(
     # for measurement (optional)
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
+    state: str | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.Dataset:
@@ -117,6 +122,8 @@ def open_csvs(
             If not specified, NA (missing indicator) will be assigned.
         signal_chan: Signal channel number (0-511).
             If not specified, -1 (missing indicator) will be assigned.
+        state: Measurement state (Unicode string up to 8 chars).
+            If not specified, NA (missing indicator) will be assigned.
         join: Method for joining the CSV files.
 
     Returns:
@@ -151,6 +158,7 @@ def open_csvs(
         chan=ds_auto.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
+        integ_time=np.full(ds_auto.sizes["time"], integ_time),
         signal_sb=np.full(
             ds_auto.sizes["time"],
             signal_sb if signal_sb is not None else "NA",
@@ -159,6 +167,10 @@ def open_csvs(
             ds_auto.sizes["time"],
             signal_chan if signal_chan is not None else -1,
         ),
+        state=np.full(
+            ds_auto.sizes["time"],
+            state if state is not None else "NA",
+        ),
         # vars
         auto_usb=ds_auto.auto_usb.data,
         auto_lsb=ds_auto.auto_lsb.data,
@@ -166,7 +178,6 @@ def open_csvs(
         # attrs
         chassis=chassis,
         interface=interface,
-        integ_time=integ_time,
     )
 
 
@@ -183,6 +194,7 @@ def open_vdifs(
     integ_time: IntegTime | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
+    state: str | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.Dataset:
@@ -200,6 +212,8 @@ def open_vdifs(
             If not specified, NA (missing indicator) will be assigned.
         signal_chan: Signal channel number (0-511).
             If not specified, -1 (missing indicator) will be assigned.
+        state: Measurement state (Unicode string up to 8 chars).
+            If not specified, NA (missing indicator) will be assigned.
         join: Method for joining the VDIF files.
 
     Returns:
@@ -235,6 +249,7 @@ def open_vdifs(
         chan=da_usb.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
+        integ_time=np.full(da_usb.sizes["time"], da_usb.integ_time),
         signal_sb=np.full(
             da_usb.sizes["time"],
             signal_sb if signal_sb is not None else "NA",
@@ -243,6 +258,10 @@ def open_vdifs(
             da_usb.sizes["time"],
             signal_chan if signal_chan is not None else -1,
         ),
+        state=np.full(
+            da_usb.sizes["time"],
+            state if state is not None else "NA",
+        ),
         # vars
         auto_usb=da_usb.data,
         auto_lsb=da_lsb.data,
@@ -250,5 +269,4 @@ def open_vdifs(
         # attrs
         chassis=chassis,
         interface=interface,
-        integ_time=da_usb.integ_time,
     )
