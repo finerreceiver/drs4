@@ -59,6 +59,12 @@ class MS(xs.AsDataset):
     ]
     """Signal channel number (0-511|-1)."""
 
+    state: Annotated[
+        xs.Data[L["time"], L["U8"]],
+        xs.attrs(long_name="Measurement state"),
+    ]
+    """Measurement state (Unicode string up to 8 chars.)"""
+
     # vars
     auto_usb: AutoUSB
     """Auto-correlation spectra of USB."""
@@ -96,6 +102,7 @@ def open_csvs(
     # for measurement (optional)
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
+    state: str | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.Dataset:
@@ -112,6 +119,8 @@ def open_csvs(
             If not specified, NA (missing indicator) will be assigned.
         signal_chan: Signal channel number (0-511).
             If not specified, -1 (missing indicator) will be assigned.
+        state: Measurement state (Unicode string up to 8 chars).
+            If not specified, NA (missing indicator) will be assigned.
         join: Method for joining the CSV files.
 
     Returns:
@@ -154,6 +163,10 @@ def open_csvs(
             ds_auto.sizes["time"],
             signal_chan if signal_chan is not None else -1,
         ),
+        state=np.full(
+            ds_auto.sizes["time"],
+            state if state is not None else "NA",
+        ),
         # vars
         auto_usb=ds_auto.auto_usb.data,
         auto_lsb=ds_auto.auto_lsb.data,
@@ -178,6 +191,7 @@ def open_vdifs(
     integ_time: IntegTime | None = None,
     signal_sb: SideBand | None = None,
     signal_chan: Channel | None = None,
+    state: str | None = None,
     # for file loading (optional)
     join: XarrayJoin = "inner",
 ) -> xr.Dataset:
@@ -195,6 +209,8 @@ def open_vdifs(
             If not specified, NA (missing indicator) will be assigned.
         signal_chan: Signal channel number (0-511).
             If not specified, -1 (missing indicator) will be assigned.
+        state: Measurement state (Unicode string up to 8 chars).
+            If not specified, NA (missing indicator) will be assigned.
         join: Method for joining the VDIF files.
 
     Returns:
@@ -237,6 +253,10 @@ def open_vdifs(
         signal_chan=np.full(
             da_usb.sizes["time"],
             signal_chan if signal_chan is not None else -1,
+        ),
+        state=np.full(
+            da_usb.sizes["time"],
+            state if state is not None else "NA",
         ),
         # vars
         auto_usb=da_usb.data,
