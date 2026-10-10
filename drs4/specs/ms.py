@@ -42,31 +42,31 @@ class MS(xs.AsDataset):
 
     # coords
     freq: Annotated[
-        xs.Data[L["chan"], np.float64],
+        xs.Coord[L["chan"], np.float64],
         xs.attrs(long_name="Intermediate frequency", units="GHz"),
     ]
     """Intermediate frequency in GHz."""
 
     integ_time: Annotated[
-        xs.Data[L["time"], np.int64],
+        xs.Coord[L["time"], np.int64],
         xs.attrs(long_name="Spectral integration time", units="ms"),
     ]
     """Spectral integration time in ms."""
 
     signal_sb: Annotated[
-        xs.Data[L["time"], L["U4"]],
+        xs.Coord[L["time"], L["U4"]],
         xs.attrs(long_name="Signal sideband"),
     ]
     """Signal sideband (USB|LSB|NA)."""
 
     signal_chan: Annotated[
-        xs.Data[L["time"], np.int64],
+        xs.Coord[L["time"], np.int64],
         xs.attrs(long_name="Signal channel number"),
     ]
     """Signal channel number (0-511|-1)."""
 
     state: Annotated[
-        xs.Data[L["time"], L["U8"]],
+        xs.Coord[L["time"], L["U8"]],
         xs.attrs(long_name="Measurement state"),
     ]
     """Measurement state (Unicode string up to 8 chars.)"""
