@@ -47,6 +47,12 @@ class MS(xs.AsDataset):
     ]
     """Intermediate frequency in GHz."""
 
+    integ_time: Annotated[
+        xs.Data[L["time"], np.int64],
+        xs.attrs(long_name="Spectral integration time", units="ms"),
+    ]
+    """Spectral integration time in ms."""
+
     signal_sb: Annotated[
         xs.Data[L["time"], L["U4"]],
         xs.attrs(long_name="Signal sideband"),
@@ -81,9 +87,6 @@ class MS(xs.AsDataset):
 
     interface: Interface
     """Interface (IF) number of DRS4 (1|2)."""
-
-    integ_time: IntegTime
-    """Spectral integration time in ms (100|200|500|1000)."""
 
     spec_version: SpecVersion = field(default=0, init=False)
     """Version of the data specification."""
@@ -155,6 +158,7 @@ def open_csvs(
         chan=ds_auto.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
+        integ_time=np.full(ds_auto.sizes["time"], integ_time),
         signal_sb=np.full(
             ds_auto.sizes["time"],
             signal_sb if signal_sb is not None else "NA",
@@ -174,7 +178,6 @@ def open_csvs(
         # attrs
         chassis=chassis,
         interface=interface,
-        integ_time=integ_time,
     )
 
 
@@ -246,6 +249,7 @@ def open_vdifs(
         chan=da_usb.chan.data,
         # coords
         freq=FREQ_INNER if freq_range == "inner" else FREQ_OUTER[::-1],
+        integ_time=np.full(da_usb.sizes["time"], da_usb.integ_time),
         signal_sb=np.full(
             da_usb.sizes["time"],
             signal_sb if signal_sb is not None else "NA",
@@ -265,5 +269,4 @@ def open_vdifs(
         # attrs
         chassis=chassis,
         interface=interface,
-        integ_time=da_usb.integ_time,
     )
