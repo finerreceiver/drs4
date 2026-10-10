@@ -1,0 +1,16 @@
+drs4.obs package
+================
+
+.. automodule:: drs4.obs
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.obs.cal
+   drs4.obs.sci

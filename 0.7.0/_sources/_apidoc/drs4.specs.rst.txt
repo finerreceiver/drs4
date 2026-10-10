@@ -1,0 +1,19 @@
+drs4.specs package
+==================
+
+.. automodule:: drs4.specs
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   drs4.specs.common
+   drs4.specs.csv
+   drs4.specs.gain
+   drs4.specs.ms
+   drs4.specs.vdif
