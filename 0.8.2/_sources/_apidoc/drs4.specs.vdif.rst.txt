@@ -1,0 +1,7 @@
+drs4.specs.vdif module
+======================
+
+.. automodule:: drs4.specs.vdif
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,7 @@
+drs4.specs.ms module
+====================
+
+.. automodule:: drs4.specs.ms
+   :members:
+   :show-inheritance:
+   :undoc-members:

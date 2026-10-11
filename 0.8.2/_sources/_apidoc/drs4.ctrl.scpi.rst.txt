@@ -1,0 +1,7 @@
+drs4.ctrl.scpi module
+=====================
+
+.. automodule:: drs4.ctrl.scpi
+   :members:
+   :show-inheritance:
+   :undoc-members:
