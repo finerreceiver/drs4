@@ -169,7 +169,10 @@ def auto(
         sleep(1.5)
 
     with set_workdir(workdir) as workdir:
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(
+            max_workers=4,
+            thread_name_prefix=f"dump_chassis{chassis}",
+        ) as executor:
             if start is not None:
                 try:
                     start.wait(timeout)
@@ -334,7 +337,10 @@ def autos(
     if stop is None:
         stop = Event()
 
-    with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
+    with ThreadPoolExecutor(
+        max_workers=len(chasses),
+        thread_name_prefix="auto",
+    ) as executor:
         futures: list[Future[Path]] = []
 
         for n, chassis in enumerate(chasses):

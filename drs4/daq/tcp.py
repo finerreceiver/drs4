@@ -309,7 +309,10 @@ def crosses(
     if stop is None:
         stop = Event()
 
-    with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
+    with ThreadPoolExecutor(
+        max_workers=len(chasses),
+        thread_name_prefix="cross",
+    ) as executor:
         futures: list[Future[Path]] = []
 
         for n, chassis in enumerate(chasses):
