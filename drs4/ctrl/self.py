@@ -123,7 +123,7 @@ def run(
     )
 
     if result.stdout:
-        lines = result.stdout.strip().split("\n")
+        lines = list(filter(str.strip, result.stdout.split("\n")))
 
         if max_debug_lines is not None and len(lines) > max_debug_lines:
             lines = (
@@ -137,7 +137,7 @@ def run(
                 LOGGER.debug(line)
 
     if result.stderr:
-        lines = result.stderr.strip().split("\n")
+        lines = list(filter(str.strip, result.stdout.split("\n")))
 
         if max_error_lines is not None and len(lines) > max_error_lines:
             lines = (
@@ -250,7 +250,7 @@ def send(
     )
 
     if result.stdout:
-        lines = result.stdout.strip().split("\n")
+        lines = list(filter(str.strip, result.stdout.split("\n")))
 
         if max_debug_lines is not None and len(lines) > max_debug_lines:
             lines = (
@@ -264,7 +264,7 @@ def send(
                 LOGGER.debug(line)
 
     if result.stderr:
-        lines = result.stderr.strip().split("\n")
+        lines = list(filter(str.strip, result.stdout.split("\n")))
 
         if max_error_lines is not None and len(lines) > max_error_lines:
             lines = (
