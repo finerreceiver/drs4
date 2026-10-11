@@ -41,6 +41,42 @@ def set_workdir(workdir: StrPath | None = None, /) -> Iterator[Path]:
             yield Path(workdir)
 
 
+def set_logger(
+    *,
+    file: StrPath | None = None,
+    level: str = "INFO",
+    stderr: bool = True,
+) -> None:
+    """Setup the DRS4 package root logger.
+
+    Args:
+        file: If given, log will be written in it.
+        level: Logging level (e.g., INFO, DEBUG).
+        stderr: If True, log will be sent to stderr.
+
+    """
+    logger = getLogger(__name__.split(".")[0])
+    logger.setLevel(level.upper())
+    logger.handlers = []
+
+    formatter = Formatter(
+        fmt="[{asctime}Z {name}.{funcName} ({threadName}) {levelname}] {message}",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        style="{",
+    )
+    formatter.converter = gmtime
+
+    if file:
+        handler = FileHandler(file)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    if stderr:
+        handler = StreamHandler()
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+
 def unique(array: NDArray[Any], /, axis: Axis = None) -> NDArray[Any]:
     """Return unique values along given axis (axes)."""
     if axis is None:
@@ -59,39 +95,3 @@ def unique(array: NDArray[Any], /, axis: Axis = None) -> NDArray[Any]:
         raise ValueError("Array values are not unique.")
 
     return result[0]
-
-
-def set_logger(
-    *,
-    file: StrPath = "drs4.log",
-    level: str = "INFO",
-    stderr: bool = True,
-) -> None:
-    """Setup the DRS4 package root logger.
-
-    Args:
-        file: If given, log will be written in it.
-        level: Logging level (e.g., INFO, DEBUG).
-        stderr: If True, log will be sent to stderr.
-
-    """
-    logger = getLogger(__name__.split(".")[0])
-    logger.setLevel(level.upper())
-    logger.handlers = []
-
-    formatter = Formatter(
-        fmt="[{asctime}Z {name}.{funcName} {levelname}] {message}",
-        datefmt="%Y-%m-%dT%H:%M:%S",
-        style="{",
-    )
-    formatter.converter = gmtime
-
-    if file:
-        handler = FileHandler(file)
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
-    if stderr:
-        handler = StreamHandler()
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
