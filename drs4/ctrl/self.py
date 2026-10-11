@@ -1,6 +1,5 @@
 __all__ = ["run", "send", "set_gain"]
 
-
 # standard library
 from logging import getLogger
 from os import getenv
@@ -11,11 +10,10 @@ from typing import overload
 import xarray as xr
 from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER, Chassis, Interface
 from ..specs.gain import GAIN_ONES, GAIN_ZEROS, open_gain, to_dataframe
-from ..utils import StrPath, is_strpath, set_workdir
+from ..utils import StrPath, is_strpath, log_args, set_workdir
 
 # type hints
 StrCP = CompletedProcess[str]
-
 
 # constants
 LOGGER = getLogger(__name__)
@@ -32,8 +30,6 @@ def run(
     timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
 ) -> StrCP: ...
-
-
 @overload
 def run(
     *commands: str,
@@ -43,8 +39,7 @@ def run(
     timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
 ) -> tuple[StrCP, StrCP]: ...
-
-
+@log_args(LOGGER)
 def run(
     # for connection (required)
     *commands: str,
@@ -105,13 +100,6 @@ def run(
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     script = ";".join((f"cd {workdir}", *commands))
     args = f"ssh {ctrl_user}@{ctrl_addr} '{script}'"
     LOGGER.debug(args)
@@ -147,8 +135,6 @@ def send(
     ctrl_user: str | None = None,
     timeout: float | None = None,
 ) -> StrCP: ...
-
-
 @overload
 def send(
     file: StrPath,
@@ -160,8 +146,7 @@ def send(
     ctrl_user: str | None = None,
     timeout: float | None = None,
 ) -> tuple[StrCP, StrCP]: ...
-
-
+@log_args(LOGGER)
 def send(
     # for file sending (required)
     file: StrPath,
@@ -217,13 +202,6 @@ def send(
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     result = sprun(
         f"scp {file} {ctrl_user}@{ctrl_addr}:{to}",
         shell=True,
@@ -244,6 +222,7 @@ def send(
     return result
 
 
+@log_args(LOGGER)
 def set_gain(
     ms: xr.Dataset | StrPath | None = None,
     /,
@@ -310,13 +289,6 @@ def set_gain(
             )
 
         return
-
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
 
     if chassis not in (1, 2):
         raise ValueError("Chassis number must be 1|2.")

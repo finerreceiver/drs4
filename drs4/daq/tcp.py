@@ -1,6 +1,5 @@
 __all__ = ["cross", "crosses"]
 
-
 # standard library
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -31,7 +30,7 @@ from ..specs.common import (
 from .common import to_zarr
 from ..specs.ms import open_csvs
 from ..specs.csv import TIME_FORMAT
-from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir
+from ..utils import StrPath, XarrayJoin, is_strpath, log_args, set_workdir
 
 # global settings
 CSV_AUTO = "~/DRS4/mrdsppy/output/new_pow.csv"
@@ -41,6 +40,7 @@ LOGGER = getLogger(__name__)
 filterwarnings("ignore", category=FutureWarning)
 
 
+@log_args(LOGGER)
 def cross(
     # for measurement (required)
     chassis: Chassis,
@@ -83,13 +83,6 @@ def cross(
     if zarr is None:
         now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         zarr = f"drs4-{now}.zarr"
-
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
 
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
@@ -265,6 +258,7 @@ def cross(
         return to_zarr(ms_if1, ms_if2, zarr, append=append, integrate=integrate)
 
 
+@log_args(LOGGER)
 def crosses(
     # for measurement (required)
     chasses: Sequence[Chassis],
@@ -299,13 +293,6 @@ def crosses(
     if zarr is None:
         now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         zarr = f"drs4-{now}.zarr"
-
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
 
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")

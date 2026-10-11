@@ -1,6 +1,5 @@
 __all__ = ["connect", "send_commands", "send_commands_in"]
 
-
 # standard library
 from logging import getLogger
 from serial import Serial
@@ -8,7 +7,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 from typing import Any, IO, Sequence, overload
 
 # dependencies
-from ..utils import StrPath
+from ..utils import StrPath, log_args
 
 # constants
 DEFAULT_AUTORECV: bool = True
@@ -119,6 +118,7 @@ def connect(
     *,
     timeout: float | None = DEFAULT_TIMEOUT,
 ) -> CustomSocket: ...
+@log_args(LOGGER)
 def connect(
     host: Any,
     port: Any,
@@ -149,13 +149,6 @@ def connect(
                 print(sock.recv())
 
     """
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     if host is None and isinstance(port, str):
         return CustomSerial(
             port,
@@ -196,6 +189,7 @@ def send_commands(
     autorecv: bool = DEFAULT_AUTORECV,
     bufsize: int = DEFAULT_BUFSIZE,
 ) -> tuple[str, ...]: ...
+@log_args(LOGGER)
 def send_commands(
     commands: IO[str] | Sequence[str] | str,
     /,
@@ -232,13 +226,6 @@ def send_commands(
             send_commands(['*RST', '*CLS'], '192.168.1.3', 5000)
 
     """
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     if isinstance(commands, str):
         commands = (commands,)
 
@@ -281,6 +268,7 @@ def send_commands_in(
     autorecv: bool = DEFAULT_AUTORECV,
     bufsize: int = DEFAULT_BUFSIZE,
 ) -> tuple[str, ...]: ...
+@log_args(LOGGER)
 def send_commands_in(
     path: StrPath,
     /,
@@ -318,13 +306,6 @@ def send_commands_in(
             send_commands_in('commands.txt', '192.168.1.3', 5000)
 
     """
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     with open(path, encoding=encoding) as f:
         return send_commands(
             f,
