@@ -43,7 +43,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://finerreceiver.github.io/drs4/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -396,7 +396,6 @@
   <h1>Source code for drs4.daq.udp</h1><div class="highlight"><pre>
 <span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">"autos"</span><span class="p">]</span>
 
-
 <span class="c1"># standard library</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span><span class="p">,</span> <span class="n">ThreadPoolExecutor</span>
@@ -440,7 +439,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_zarr</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..specs.ms</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_vdifs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..specs.vdif</span><span class="w"> </span><span class="kn">import</span> <span class="n">VDIF_FRAME_BYTES</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrPath</span><span class="p">,</span> <span class="n">XarrayJoin</span><span class="p">,</span> <span class="n">is_strpath</span><span class="p">,</span> <span class="n">set_workdir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrPath</span><span class="p">,</span> <span class="n">XarrayJoin</span><span class="p">,</span> <span class="n">is_strpath</span><span class="p">,</span> <span class="n">log_args</span><span class="p">,</span> <span class="n">set_workdir</span>
 
 <span class="c1"># global settings</span>
 <span class="n">GROUP</span> <span class="o">=</span> <span class="s2">"239.0.0.1"</span>
@@ -450,6 +449,7 @@
 
 <div class="viewcode-block" id="auto">
 <a class="viewcode-back" href="../../../_apidoc/drs4.daq.udp.html#drs4.daq.auto">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">auto</span><span class="p">(</span>
     <span class="c1"># for measurement (required)</span>
     <span class="n">chassis</span><span class="p">:</span> <span class="n">Chassis</span><span class="p">,</span>
@@ -513,13 +513,6 @@
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%SZ"</span><span class="p">)</span>
         <span class="n">zarr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"drs4-</span><span class="si">{</span><span class="n">now</span><span class="si">}</span><span class="s2">.zarr"</span>
 
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
-
     <span class="k">if</span> <span class="n">append</span> <span class="ow">and</span> <span class="n">overwrite</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Append and overwrite cannot be enabled at once."</span><span class="p">)</span>
 
@@ -574,7 +567,10 @@
         <span class="n">sleep</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="n">set_workdir</span><span class="p">(</span><span class="n">workdir</span><span class="p">)</span> <span class="k">as</span> <span class="n">workdir</span><span class="p">:</span>
-        <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="n">thread_name_prefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">"dump_chassis</span><span class="si">{</span><span class="n">chassis</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">start</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
@@ -692,6 +688,7 @@
 
 <div class="viewcode-block" id="autos">
 <a class="viewcode-back" href="../../../_apidoc/drs4.daq.udp.html#drs4.daq.autos">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">autos</span><span class="p">(</span>
     <span class="c1"># for measurement (required)</span>
     <span class="n">chasses</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Chassis</span><span class="p">],</span>
@@ -727,13 +724,6 @@
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%SZ"</span><span class="p">)</span>
         <span class="n">zarr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"drs4-</span><span class="si">{</span><span class="n">now</span><span class="si">}</span><span class="s2">.zarr"</span>
 
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
-
     <span class="k">if</span> <span class="n">append</span> <span class="ow">and</span> <span class="n">overwrite</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Append and overwrite cannot be enabled at once."</span><span class="p">)</span>
 
@@ -748,7 +738,10 @@
     <span class="k">if</span> <span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">stop</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
 
-    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">chasses</span><span class="p">))</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span>
+        <span class="n">max_workers</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">chasses</span><span class="p">),</span>
+        <span class="n">thread_name_prefix</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
         <span class="n">futures</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Future</span><span class="p">[</span><span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">chassis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chasses</span><span class="p">):</span>

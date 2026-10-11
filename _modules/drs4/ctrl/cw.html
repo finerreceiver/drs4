@@ -43,7 +43,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://finerreceiver.github.io/drs4/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -396,14 +396,12 @@
   <h1>Source code for drs4.ctrl.cw</h1><div class="highlight"><pre>
 <span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"on"</span><span class="p">,</span> <span class="s2">"off"</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">]</span>
 
-
 <span class="c1"># standard library</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">getLogger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">os</span><span class="w"> </span><span class="kn">import</span> <span class="n">getenv</span>
 
 <span class="c1"># constants</span>
 <span class="n">LOGGER</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
 
 <span class="c1"># dependencies</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scpi</span><span class="w"> </span><span class="kn">import</span> <span class="n">send_commands</span>
@@ -419,10 +417,12 @@
     <span class="n">FreqRange</span><span class="p">,</span>
     <span class="n">SideBand</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_args</span>
 
 
 <div class="viewcode-block" id="on">
 <a class="viewcode-back" href="../../../_apidoc/drs4.ctrl.cw.html#drs4.ctrl.cw.on">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">on</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="c1"># for measurement (required)</span>
@@ -482,13 +482,6 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Signal sideband must be USB|LSB."</span><span class="p">)</span>
 
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
-
     <span class="n">send_commands</span><span class="p">(</span>
         <span class="p">[</span>
             <span class="s2">"FREQ:MODE CW"</span><span class="p">,</span>
@@ -505,6 +498,7 @@
 
 <div class="viewcode-block" id="off">
 <a class="viewcode-back" href="../../../_apidoc/drs4.ctrl.cw.html#drs4.ctrl.cw.off">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">off</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="c1"># for connection (optional)</span>
@@ -528,13 +522,6 @@
     <span class="k">if</span> <span class="n">sg_port</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">sg_port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">getenv</span><span class="p">(</span><span class="n">ENV_SG_PORT</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
 
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
-
     <span class="n">send_commands</span><span class="p">(</span>
         <span class="s2">"OUTP OFF"</span><span class="p">,</span>
         <span class="n">host</span><span class="o">=</span><span class="n">sg_host</span><span class="p">,</span>
@@ -546,6 +533,7 @@
 
 <div class="viewcode-block" id="status">
 <a class="viewcode-back" href="../../../_apidoc/drs4.ctrl.cw.html#drs4.ctrl.cw.status">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="c1"># for connection (optional)</span>
@@ -568,13 +556,6 @@
 
     <span class="k">if</span> <span class="n">sg_port</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">sg_port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">getenv</span><span class="p">(</span><span class="n">ENV_SG_PORT</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">send_commands</span><span class="p">(</span>
         <span class="p">[</span><span class="s2">"AMPL?"</span><span class="p">,</span> <span class="s2">"FREQ?"</span><span class="p">,</span> <span class="s2">"OUTP?"</span><span class="p">],</span>

@@ -43,7 +43,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://finerreceiver.github.io/drs4/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -396,7 +396,6 @@
   <h1>Source code for drs4.ctrl.self</h1><div class="highlight"><pre>
 <span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"run"</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="s2">"set_gain"</span><span class="p">]</span>
 
-
 <span class="c1"># standard library</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">getLogger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">os</span><span class="w"> </span><span class="kn">import</span> <span class="n">getenv</span>
@@ -407,11 +406,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..specs.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENV_CTRL_ADDR</span><span class="p">,</span> <span class="n">ENV_CTRL_USER</span><span class="p">,</span> <span class="n">Chassis</span><span class="p">,</span> <span class="n">Interface</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..specs.gain</span><span class="w"> </span><span class="kn">import</span> <span class="n">GAIN_ONES</span><span class="p">,</span> <span class="n">GAIN_ZEROS</span><span class="p">,</span> <span class="n">open_gain</span><span class="p">,</span> <span class="n">to_dataframe</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrPath</span><span class="p">,</span> <span class="n">is_strpath</span><span class="p">,</span> <span class="n">set_workdir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER_LOCK</span><span class="p">,</span> <span class="n">StrPath</span><span class="p">,</span> <span class="n">is_strpath</span><span class="p">,</span> <span class="n">log_args</span><span class="p">,</span> <span class="n">set_workdir</span>
 
 <span class="c1"># type hints</span>
 <span class="n">StrCP</span> <span class="o">=</span> <span class="n">CompletedProcess</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-
 
 <span class="c1"># constants</span>
 <span class="n">LOGGER</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -427,9 +425,9 @@
     <span class="n">ctrl_user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">workdir</span><span class="p">:</span> <span class="n">StrPath</span> <span class="o">=</span> <span class="n">PATH_CMD_DIR</span><span class="p">,</span>
+    <span class="n">max_debug_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_error_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StrCP</span><span class="p">:</span> <span class="o">...</span>
-
-
 <span class="nd">@overload</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="o">*</span><span class="n">commands</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -438,11 +436,12 @@
     <span class="n">ctrl_user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">workdir</span><span class="p">:</span> <span class="n">StrPath</span> <span class="o">=</span> <span class="n">PATH_CMD_DIR</span><span class="p">,</span>
+    <span class="n">max_debug_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_error_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">StrCP</span><span class="p">,</span> <span class="n">StrCP</span><span class="p">]:</span> <span class="o">...</span>
-
-
 <div class="viewcode-block" id="run">
 <a class="viewcode-back" href="../../../_apidoc/drs4.ctrl.self.html#drs4.ctrl.self.run">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="c1"># for connection (required)</span>
     <span class="o">*</span><span class="n">commands</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -452,6 +451,9 @@
     <span class="n">ctrl_user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">workdir</span><span class="p">:</span> <span class="n">StrPath</span> <span class="o">=</span> <span class="n">PATH_CMD_DIR</span><span class="p">,</span>
+    <span class="c1"># for logging (optional)</span>
+    <span class="n">max_debug_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_error_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StrCP</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">StrCP</span><span class="p">,</span> <span class="n">StrCP</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Run commands in DRS4.</span>
 
@@ -465,6 +467,8 @@
 <span class="sd">            environment variable ``DRS4_CHASSIS[1|2]_CTRL_USER`` will be used.</span>
 <span class="sd">        timeout: Timeout of the connection and the running in seconds.</span>
 <span class="sd">        workdir: Working directory where commands will be run.</span>
+<span class="sd">        max_debug_lines: Maximum number of debug lines to log.</span>
+<span class="sd">        max_error_lines: Maximum number of error lines to log.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Completed process object(s) of the run(s).</span>
@@ -503,13 +507,6 @@
     <span class="k">if</span> <span class="n">ctrl_user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ctrl_user</span> <span class="o">=</span> <span class="n">getenv</span><span class="p">(</span><span class="n">ENV_CTRL_USER</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">chassis</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span>
 
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
-
     <span class="n">script</span> <span class="o">=</span> <span class="s2">";"</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="sa">f</span><span class="s2">"cd </span><span class="si">{</span><span class="n">workdir</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="o">*</span><span class="n">commands</span><span class="p">))</span>
     <span class="n">args</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"ssh </span><span class="si">{</span><span class="n">ctrl_user</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">ctrl_addr</span><span class="si">}</span><span class="s2"> '</span><span class="si">{</span><span class="n">script</span><span class="si">}</span><span class="s2">'"</span>
     <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
@@ -524,12 +521,32 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">max_debug_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_debug_lines</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">lines</span><span class="p">[:</span> <span class="p">(</span><span class="n">head_lines</span> <span class="o">:=</span> <span class="n">max_debug_lines</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">"..."</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">max_debug_lines</span> <span class="o">-</span> <span class="n">head_lines</span><span class="p">)</span> <span class="p">:]</span>
+            <span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">LOGGER_LOCK</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">max_error_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_error_lines</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">lines</span><span class="p">[:</span> <span class="p">(</span><span class="n">head_lines</span> <span class="o">:=</span> <span class="n">max_error_lines</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">"..."</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">max_error_lines</span> <span class="o">-</span> <span class="n">head_lines</span><span class="p">)</span> <span class="p">:]</span>
+            <span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">LOGGER_LOCK</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">result</span></div>
 
@@ -545,9 +562,9 @@
     <span class="n">ctrl_addr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ctrl_user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_debug_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_error_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StrCP</span><span class="p">:</span> <span class="o">...</span>
-
-
 <span class="nd">@overload</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
     <span class="n">file</span><span class="p">:</span> <span class="n">StrPath</span><span class="p">,</span>
@@ -558,11 +575,12 @@
     <span class="n">ctrl_addr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ctrl_user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_debug_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_error_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">StrCP</span><span class="p">,</span> <span class="n">StrCP</span><span class="p">]:</span> <span class="o">...</span>
-
-
 <div class="viewcode-block" id="send">
 <a class="viewcode-back" href="../../../_apidoc/drs4.ctrl.self.html#drs4.ctrl.self.send">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
     <span class="c1"># for file sending (required)</span>
     <span class="n">file</span><span class="p">:</span> <span class="n">StrPath</span><span class="p">,</span>
@@ -574,6 +592,9 @@
     <span class="n">ctrl_addr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ctrl_user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># for logging (optional)</span>
+    <span class="n">max_debug_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_error_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StrCP</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">StrCP</span><span class="p">,</span> <span class="n">StrCP</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Send a file to DRS4.</span>
 
@@ -587,6 +608,8 @@
 <span class="sd">        ctrl_user: User name of DRS4. If not specified,</span>
 <span class="sd">            environment variable ``DRS4_CHASSIS[1|2]_CTRL_USER`` will be used.</span>
 <span class="sd">        timeout: Timeout of the connection and the sending in seconds.</span>
+<span class="sd">        max_debug_lines: Maximum number of debug lines to log.</span>
+<span class="sd">        max_error_lines: Maximum number of error lines to log.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Completed process object(s) of the sending(s).</span>
@@ -618,13 +641,6 @@
     <span class="k">if</span> <span class="n">ctrl_user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ctrl_user</span> <span class="o">=</span> <span class="n">getenv</span><span class="p">(</span><span class="n">ENV_CTRL_USER</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">chassis</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span>
 
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
-
     <span class="n">result</span> <span class="o">=</span> <span class="n">sprun</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"scp </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">ctrl_user</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">ctrl_addr</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">to</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -635,12 +651,32 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">max_debug_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_debug_lines</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">lines</span><span class="p">[:</span> <span class="p">(</span><span class="n">head_lines</span> <span class="o">:=</span> <span class="n">max_debug_lines</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">"..."</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">max_debug_lines</span> <span class="o">-</span> <span class="n">head_lines</span><span class="p">)</span> <span class="p">:]</span>
+            <span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">LOGGER_LOCK</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">max_error_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_error_lines</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">lines</span><span class="p">[:</span> <span class="p">(</span><span class="n">head_lines</span> <span class="o">:=</span> <span class="n">max_error_lines</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">"..."</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">max_error_lines</span> <span class="o">-</span> <span class="n">head_lines</span><span class="p">)</span> <span class="p">:]</span>
+            <span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">LOGGER_LOCK</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">result</span></div>
 
@@ -648,6 +684,7 @@
 
 <div class="viewcode-block" id="set_gain">
 <a class="viewcode-back" href="../../../_apidoc/drs4.ctrl.self.html#drs4.ctrl.self.set_gain">[docs]</a>
+<span class="nd">@log_args</span><span class="p">(</span><span class="n">LOGGER</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_gain</span><span class="p">(</span>
     <span class="n">ms</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="n">StrPath</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">/</span><span class="p">,</span>
@@ -714,13 +751,6 @@
             <span class="p">)</span>
 
         <span class="k">return</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">")"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">chassis</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Chassis number must be 1|2."</span><span class="p">)</span>
