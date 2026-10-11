@@ -55,6 +55,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "black>=26",
+    "fire>=0.7",
     "ipython>=8",
     "myst-parser>=4",
     "pandas-stubs>=2",
