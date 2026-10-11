@@ -1,4 +1,5 @@
 __all__ = [
+    "LOGGER_LOCK",
     "StrPath",
     "XarrayJoin",
     "is_strpath",
@@ -27,8 +28,8 @@ from numpy.typing import NDArray
 from typing_extensions import ParamSpec, TypeGuard
 
 # constants
-LOGGER_LOCK = Lock()
 LOGGER = getLogger(__name__)
+LOGGER_LOCK = Lock()
 
 # type hints
 P = ParamSpec("P")

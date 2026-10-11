@@ -200,6 +200,7 @@ def cross(
                             f"cat {CSV_CROSS}",
                             chassis=chassis,
                             timeout=timeout,
+                            max_debug_lines=10,
                         )
                         result.check_returncode()
                         rows = result.stdout.split()
