@@ -64,6 +64,8 @@ def log_args(logger: Logger, /) -> Callable[[Callable[P, R]], Callable[P, R]]:
 
             return func(*args, **kwargs)
 
+        new_code = wrapper.__code__.replace(co_name=func.__name__)  # type: ignore
+        wrapper.__code__ = new_code  # type: ignore
         return wrapper
 
     return decorator
