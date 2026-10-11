@@ -127,7 +127,7 @@ def run(
 
         if max_debug_lines is not None and len(lines) > max_debug_lines:
             lines = (
-                lines[: head_lines := max_debug_lines // 2]
+                lines[: (head_lines := max_debug_lines // 2)]
                 + ["..."]
                 + lines[-(max_debug_lines - head_lines) :]
             )
@@ -141,7 +141,7 @@ def run(
 
         if max_error_lines is not None and len(lines) > max_error_lines:
             lines = (
-                lines[: head_lines := max_error_lines // 2]
+                lines[: (head_lines := max_error_lines // 2)]
                 + ["..."]
                 + lines[-(max_error_lines - head_lines) :]
             )
@@ -254,7 +254,7 @@ def send(
 
         if max_debug_lines is not None and len(lines) > max_debug_lines:
             lines = (
-                lines[: head_lines := max_debug_lines // 2]
+                lines[: (head_lines := max_debug_lines // 2)]
                 + ["..."]
                 + lines[-(max_debug_lines - head_lines) :]
             )
@@ -268,7 +268,7 @@ def send(
 
         if max_error_lines is not None and len(lines) > max_error_lines:
             lines = (
-                lines[: head_lines := max_error_lines // 2]
+                lines[: (head_lines := max_error_lines // 2)]
                 + ["..."]
                 + lines[-(max_error_lines - head_lines) :]
             )
