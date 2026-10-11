@@ -1,6 +1,5 @@
 __all__ = ["run", "send", "set_gain"]
 
-
 # standard library
 from logging import getLogger
 from os import getenv
@@ -11,11 +10,10 @@ from typing import overload
 import xarray as xr
 from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER, Chassis, Interface
 from ..specs.gain import GAIN_ONES, GAIN_ZEROS, open_gain, to_dataframe
-from ..utils import StrPath, is_strpath, set_workdir
+from ..utils import LOGGER_LOCK, StrPath, is_strpath, log_args, set_workdir
 
 # type hints
 StrCP = CompletedProcess[str]
-
 
 # constants
 LOGGER = getLogger(__name__)
@@ -31,9 +29,9 @@ def run(
     ctrl_user: str | None = None,
     timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
+    max_debug_lines: int | None = None,
+    max_error_lines: int | None = None,
 ) -> StrCP: ...
-
-
 @overload
 def run(
     *commands: str,
@@ -42,9 +40,10 @@ def run(
     ctrl_user: str | None = None,
     timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
+    max_debug_lines: int | None = None,
+    max_error_lines: int | None = None,
 ) -> tuple[StrCP, StrCP]: ...
-
-
+@log_args(LOGGER)
 def run(
     # for connection (required)
     *commands: str,
@@ -54,6 +53,9 @@ def run(
     ctrl_user: str | None = None,
     timeout: float | None = None,
     workdir: StrPath = PATH_CMD_DIR,
+    # for logging (optional)
+    max_debug_lines: int | None = None,
+    max_error_lines: int | None = None,
 ) -> StrCP | tuple[StrCP, StrCP]:
     """Run commands in DRS4.
 
@@ -67,6 +69,8 @@ def run(
             environment variable ``DRS4_CHASSIS[1|2]_CTRL_USER`` will be used.
         timeout: Timeout of the connection and the running in seconds.
         workdir: Working directory where commands will be run.
+        max_debug_lines: Maximum number of debug lines to log.
+        max_error_lines: Maximum number of error lines to log.
 
     Returns:
         Completed process object(s) of the run(s).
@@ -105,13 +109,6 @@ def run(
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     script = ";".join((f"cd {workdir}", *commands))
     args = f"ssh {ctrl_user}@{ctrl_addr} '{script}'"
     LOGGER.debug(args)
@@ -126,12 +123,32 @@ def run(
     )
 
     if result.stdout:
-        for line in result.stdout.split("\n"):
-            LOGGER.debug(line)
+        lines = result.stdout.split("\n")
+
+        if max_debug_lines is not None and len(lines) > max_debug_lines:
+            lines = (
+                lines[: (head_lines := max_debug_lines // 2)]
+                + ["..."]
+                + lines[-(max_debug_lines - head_lines) :]
+            )
+
+        with LOGGER_LOCK:
+            for line in lines:
+                LOGGER.debug(line)
 
     if result.stderr:
-        for line in result.stderr.split("\n"):
-            LOGGER.error(line)
+        lines = result.stderr.split("\n")
+
+        if max_error_lines is not None and len(lines) > max_error_lines:
+            lines = (
+                lines[: (head_lines := max_error_lines // 2)]
+                + ["..."]
+                + lines[-(max_error_lines - head_lines) :]
+            )
+
+        with LOGGER_LOCK:
+            for line in lines:
+                LOGGER.error(line)
 
     return result
 
@@ -146,9 +163,9 @@ def send(
     ctrl_addr: str | None = None,
     ctrl_user: str | None = None,
     timeout: float | None = None,
+    max_debug_lines: int | None = None,
+    max_error_lines: int | None = None,
 ) -> StrCP: ...
-
-
 @overload
 def send(
     file: StrPath,
@@ -159,9 +176,10 @@ def send(
     ctrl_addr: str | None = None,
     ctrl_user: str | None = None,
     timeout: float | None = None,
+    max_debug_lines: int | None = None,
+    max_error_lines: int | None = None,
 ) -> tuple[StrCP, StrCP]: ...
-
-
+@log_args(LOGGER)
 def send(
     # for file sending (required)
     file: StrPath,
@@ -173,6 +191,9 @@ def send(
     ctrl_addr: str | None = None,
     ctrl_user: str | None = None,
     timeout: float | None = None,
+    # for logging (optional)
+    max_debug_lines: int | None = None,
+    max_error_lines: int | None = None,
 ) -> StrCP | tuple[StrCP, StrCP]:
     """Send a file to DRS4.
 
@@ -186,6 +207,8 @@ def send(
         ctrl_user: User name of DRS4. If not specified,
             environment variable ``DRS4_CHASSIS[1|2]_CTRL_USER`` will be used.
         timeout: Timeout of the connection and the sending in seconds.
+        max_debug_lines: Maximum number of debug lines to log.
+        max_error_lines: Maximum number of error lines to log.
 
     Returns:
         Completed process object(s) of the sending(s).
@@ -217,13 +240,6 @@ def send(
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     result = sprun(
         f"scp {file} {ctrl_user}@{ctrl_addr}:{to}",
         shell=True,
@@ -234,16 +250,37 @@ def send(
     )
 
     if result.stdout:
-        for line in result.stdout.split("\n"):
-            LOGGER.debug(line)
+        lines = result.stdout.split("\n")
+
+        if max_debug_lines is not None and len(lines) > max_debug_lines:
+            lines = (
+                lines[: (head_lines := max_debug_lines // 2)]
+                + ["..."]
+                + lines[-(max_debug_lines - head_lines) :]
+            )
+
+        with LOGGER_LOCK:
+            for line in lines:
+                LOGGER.debug(line)
 
     if result.stderr:
-        for line in result.stderr.split("\n"):
-            LOGGER.error(line)
+        lines = result.stderr.split("\n")
+
+        if max_error_lines is not None and len(lines) > max_error_lines:
+            lines = (
+                lines[: (head_lines := max_error_lines // 2)]
+                + ["..."]
+                + lines[-(max_error_lines - head_lines) :]
+            )
+
+        with LOGGER_LOCK:
+            for line in lines:
+                LOGGER.error(line)
 
     return result
 
 
+@log_args(LOGGER)
 def set_gain(
     ms: xr.Dataset | StrPath | None = None,
     /,
@@ -310,13 +347,6 @@ def set_gain(
             )
 
         return
-
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
 
     if chassis not in (1, 2):
         raise ValueError("Chassis number must be 1|2.")

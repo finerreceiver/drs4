@@ -1,13 +1,11 @@
 __all__ = ["on", "off", "status"]
 
-
 # standard library
 from logging import getLogger
 from os import getenv
 
 # constants
 LOGGER = getLogger(__name__)
-
 
 # dependencies
 from .scpi import send_commands
@@ -23,8 +21,10 @@ from ..specs.common import (
     FreqRange,
     SideBand,
 )
+from ..utils import log_args
 
 
+@log_args(LOGGER)
 def on(
     *,
     # for measurement (required)
@@ -84,13 +84,6 @@ def on(
     else:
         raise ValueError("Signal sideband must be USB|LSB.")
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     send_commands(
         [
             "FREQ:MODE CW",
@@ -104,6 +97,7 @@ def on(
     )
 
 
+@log_args(LOGGER)
 def off(
     *,
     # for connection (optional)
@@ -127,13 +121,6 @@ def off(
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, ""))
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     send_commands(
         "OUTP OFF",
         host=sg_host,
@@ -142,6 +129,7 @@ def off(
     )
 
 
+@log_args(LOGGER)
 def status(
     *,
     # for connection (optional)
@@ -164,13 +152,6 @@ def status(
 
     if sg_port is None:
         sg_port = int(getenv(ENV_SG_PORT, ""))
-
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
 
     for message in send_commands(
         ["AMPL?", "FREQ?", "OUTP?"],

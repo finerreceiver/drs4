@@ -1,6 +1,5 @@
 __all__ = ["auto", "autos"]
 
-
 # standard library
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -44,7 +43,7 @@ from ..specs.common import (
 from .common import to_zarr
 from ..specs.ms import open_vdifs
 from ..specs.vdif import VDIF_FRAME_BYTES
-from ..utils import StrPath, XarrayJoin, is_strpath, set_workdir
+from ..utils import StrPath, XarrayJoin, is_strpath, log_args, set_workdir
 
 # global settings
 GROUP = "239.0.0.1"
@@ -52,6 +51,7 @@ LOGGER = getLogger(__name__)
 filterwarnings("ignore", category=FutureWarning)
 
 
+@log_args(LOGGER)
 def auto(
     # for measurement (required)
     chassis: Chassis,
@@ -115,13 +115,6 @@ def auto(
         now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         zarr = f"drs4-{now}.zarr"
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
 
@@ -176,7 +169,10 @@ def auto(
         sleep(1.5)
 
     with set_workdir(workdir) as workdir:
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(
+            max_workers=4,
+            thread_name_prefix=f"dump_chassis{chassis}",
+        ) as executor:
             if start is not None:
                 try:
                     start.wait(timeout)
@@ -291,6 +287,7 @@ def auto(
         return to_zarr(ms_if1, ms_if2, zarr, append=append, integrate=integrate)
 
 
+@log_args(LOGGER)
 def autos(
     # for measurement (required)
     chasses: Sequence[Chassis],
@@ -326,13 +323,6 @@ def autos(
         now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         zarr = f"drs4-{now}.zarr"
 
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
-
     if append and overwrite:
         raise ValueError("Append and overwrite cannot be enabled at once.")
 
@@ -347,7 +337,10 @@ def autos(
     if stop is None:
         stop = Event()
 
-    with ThreadPoolExecutor(max_workers=len(chasses)) as executor:
+    with ThreadPoolExecutor(
+        max_workers=len(chasses),
+        thread_name_prefix="auto",
+    ) as executor:
         futures: list[Future[Path]] = []
 
         for n, chassis in enumerate(chasses):

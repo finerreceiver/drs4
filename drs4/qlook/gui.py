@@ -1,6 +1,5 @@
 __all__ = ["run"]
 
-
 # standard library
 from datetime import datetime
 from logging import getLogger
@@ -14,7 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from PIL import Image
 from ..specs.common import ENV_CTRL_ADDR, ENV_CTRL_USER, Chassis
-from ..utils import StrPath, set_workdir
+from ..utils import StrPath, log_args, set_workdir
 
 # constants
 IMAGE_DIR = "~/DRS4"
@@ -27,6 +26,7 @@ IMAGE_12 = Path("disp_histogram4.jpg")
 LOGGER = getLogger(__name__)
 
 
+@log_args(LOGGER)
 def run(
     *,
     # for connection (required)
@@ -59,13 +59,6 @@ def run(
 
     if ctrl_user is None:
         ctrl_user = getenv(ENV_CTRL_USER.format(chassis), "")
-
-    LOGGER.debug("(")
-
-    for key, val in locals().items():
-        LOGGER.debug(f"  {key}: {val!r}")
-
-    LOGGER.debug(")")
 
     with set_workdir(workdir) as workdir:
         fig, axes = plt.subplots(2, 3, figsize=figsize)
