@@ -1,0 +1,7 @@
+drs4.daq.udp module
+===================
+
+.. automodule:: drs4.daq.udp
+   :members:
+   :show-inheritance:
+   :undoc-members:

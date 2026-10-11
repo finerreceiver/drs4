@@ -1,0 +1,7 @@
+drs4.specs.common module
+========================
+
+.. automodule:: drs4.specs.common
+   :members:
+   :show-inheritance:
+   :undoc-members:

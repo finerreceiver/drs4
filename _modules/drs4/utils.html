@@ -43,7 +43,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://finerreceiver.github.io/drs4/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -465,6 +465,8 @@
 
             <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
+        <span class="n">new_code</span> <span class="o">=</span> <span class="n">wrapper</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">co_name</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">wrapper</span><span class="o">.</span><span class="vm">__code__</span> <span class="o">=</span> <span class="n">new_code</span>  <span class="c1"># type: ignore</span>
         <span class="k">return</span> <span class="n">wrapper</span>
 
     <span class="k">return</span> <span class="n">decorator</span></div>
